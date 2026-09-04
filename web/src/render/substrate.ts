@@ -43,17 +43,19 @@ export function renderSubstrate(sub: Substrate, w: number, h: number): HTMLCanva
       const i = (y * w + x) * 4;
       let shade = 0;
 
-      // Tooth: the fine tumble of the sheet's surface.
-      shade += (valueNoise2D(x / (1.4 * s), y / (1.4 * s), 3) - 0.5) * 26 * tooth;
+      // Tooth: the fine tumble of the sheet's surface. Kept faint and a
+      // little coarser than a pixel — at phone scale a per-pixel tumble reads
+      // as static, and paper is nearly flat until you look for the texture.
+      shade += (valueNoise2D(x / (2.6 * s), y / (2.6 * s), 3) - 0.5) * 7 * tooth;
       // Fibre: longer strands lying in the pulp.
-      shade += fbm(x / (28 * s), y / (5 * s), 17, 3) * 12 * fibreAmt;
+      shade += fbm(x / (34 * s), y / (6 * s), 17, 2) * 5 * fibreAmt;
 
       const [textureShade, warm] = texture(sub.texture, x, y, s);
       shade += textureShade;
 
       // A slow, uneven fall-off toward the corners — a sheet is never flat-lit.
       const vx = (x / w - 0.5) * 2, vy = (y / h - 0.5) * 2;
-      shade -= (vx * vx + vy * vy) * 9;
+      shade -= (vx * vx + vy * vy) * 5;
 
       d[i] = br + shade + warm * 1.0;
       d[i + 1] = bg + shade * 0.97 + warm * 0.42;
@@ -74,11 +76,12 @@ function texture(t: SubstrateTexture, x: number, y: number, s: number): [number,
       return [0, 0];
     case 'laid':
       // Chain and laid lines of a mould-made sheet.
-      return [Math.sin((y / (3.4 * s)) * Math.PI) * 5 + (x % Math.round(96 * s) < 2 * s ? -7 : 0), 0];
+      return [Math.sin((y / (3.4 * s)) * Math.PI) * 3 + (x % Math.round(96 * s) < 2 * s ? -5 : 0), 0];
     case 'grain':
-      return [fbm(x / (7 * s), y / (7 * s), 91, 3) * 14, 0];
+      // A slow mottle, not a speckle.
+      return [fbm(x / (16 * s), y / (16 * s), 91, 2) * 5, 0];
     case 'speckle':
-      return [valueNoise2D(x / 1.05, y / 1.05, 5) > 0.972 ? -34 : 0, 0];
+      return [valueNoise2D(x / 1.05, y / 1.05, 5) > 0.985 ? -22 : 0, 0];
     case 'foxed': {
       // Foxing is small rust-brown spots on an otherwise sound sheet, not
       // sheets of grey bloom: high frequency, high threshold, and the tone
@@ -86,8 +89,8 @@ function texture(t: SubstrateTexture, x: number, y: number, s: number): [number,
       const spot = fbm(x / (7 * s), y / (7 * s), 53, 3);
       const cluster = fbm(x / (52 * s), y / (52 * s), 29, 2);
       const strength = Math.max(0, spot - 0.34) * Math.max(0, 0.55 + cluster);
-      const tooth = fbm(x / (9 * s), y / (9 * s), 7, 2) * 4;
-      return [tooth - strength * 46, strength * 62];
+      const tooth = fbm(x / (14 * s), y / (14 * s), 7, 2) * 3;
+      return [tooth - strength * 40, strength * 54];
     }
   }
 }
