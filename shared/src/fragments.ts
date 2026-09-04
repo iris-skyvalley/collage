@@ -31,16 +31,21 @@ type Gen = (c: Ctx) => { w: number; h: number; body: string; defs?: string };
 // --- drawing helpers --------------------------------------------------------
 
 const SW = 3.5;
-const line = (d: string, extra = ''): string =>
-  `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${SW}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`;
-const shape = (d: string, fill: string, extra = ''): string =>
-  `<path d="${d}" fill="${fill}" stroke="${INK}" stroke-width="${SW}" stroke-linejoin="round"${extra}/>`;
-const rect = (x: number, y: number, w: number, h: number, fill: string, rx = 0, extra = ''): string =>
-  `<rect x="${fmt(x)}" y="${fmt(y)}" width="${fmt(w)}" height="${fmt(h)}" rx="${rx}" fill="${fill}" stroke="${INK}" stroke-width="${SW}"${extra}/>`;
-const circle = (cx: number, cy: number, r: number, fill: string, extra = ''): string =>
-  `<circle cx="${fmt(cx)}" cy="${fmt(cy)}" r="${fmt(r)}" fill="${fill}" stroke="${INK}" stroke-width="${SW}"${extra}/>`;
-const ellipse = (cx: number, cy: number, rx: number, ry: number, fill: string, extra = ''): string =>
-  `<ellipse cx="${fmt(cx)}" cy="${fmt(cy)}" rx="${fmt(rx)}" ry="${fmt(ry)}" fill="${fill}" stroke="${INK}" stroke-width="${SW}"${extra}/>`;
+type Attrs = Record<string, string | number>;
+/** Later keys win, so an override never produces a duplicate attribute —
+ *  which is well-formed HTML and malformed XML, and an SVG in an <img> is XML. */
+const attrs = (base: Attrs, extra: Attrs): string =>
+  Object.entries({ ...base, ...extra }).map(([k, v]) => `${k}="${v}"`).join(' ');
+const line = (d: string, extra: Attrs = {}): string =>
+  `<path ${attrs({ d, fill: 'none', stroke: INK, 'stroke-width': SW, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, extra)}/>`;
+const shape = (d: string, fill: string, extra: Attrs = {}): string =>
+  `<path ${attrs({ d, fill, stroke: INK, 'stroke-width': SW, 'stroke-linejoin': 'round' }, extra)}/>`;
+const rect = (x: number, y: number, w: number, h: number, fill: string, rx = 0, extra: Attrs = {}): string =>
+  `<rect ${attrs({ x: fmt(x), y: fmt(y), width: fmt(w), height: fmt(h), rx, fill, stroke: INK, 'stroke-width': SW }, extra)}/>`;
+const circle = (cx: number, cy: number, r: number, fill: string, extra: Attrs = {}): string =>
+  `<circle ${attrs({ cx: fmt(cx), cy: fmt(cy), r: fmt(r), fill, stroke: INK, 'stroke-width': SW }, extra)}/>`;
+const ellipse = (cx: number, cy: number, rx: number, ry: number, fill: string, extra: Attrs = {}): string =>
+  `<ellipse ${attrs({ cx: fmt(cx), cy: fmt(cy), rx: fmt(rx), ry: fmt(ry), fill, stroke: INK, 'stroke-width': SW }, extra)}/>`;
 
 const shade = (hex: string, k = 0.18): string => mixHex(hex, '#000000', k);
 const tint = (hex: string, k = 0.25): string => mixHex(hex, '#ffffff', k);
@@ -84,7 +89,7 @@ const tee: Gen = (c) => {
   return {
     w, h, defs,
     body: shape(polygon(mirror(half, cx)), fill) + line('M 206 116 Q 256 166 306 116') +
-      line('M 170 214 L 160 430', ' opacity="0.25"') + line('M 342 214 L 352 430', ' opacity="0.25"'),
+      line('M 170 214 L 160 430', { opacity: 0.25 }) + line('M 342 214 L 352 430', { opacity: 0.25 }),
   };
 };
 
@@ -97,7 +102,7 @@ const blouse: Gen = (c) => {
     w, h, defs,
     body: shape(polygon(mirror(half, cx)), fill) +
       shape('M 216 110 L 256 170 L 296 110 L 276 98 L 256 130 L 236 98 Z', tint(base, 0.15)) +
-      buttons(256, 190, 410, 5) + line('M 112 330 L 148 340', ''),
+      buttons(256, 190, 410, 5) + line('M 112 330 L 148 340'),
   };
 };
 
@@ -107,12 +112,12 @@ const sweater: Gen = (c) => {
   const { fill, defs } = fabric(c, base, 0.35);
   const half: Pt[] = [[204, 118], [146, 136], [96, 340], [140, 350], [170, 236], [164, 420], [256, 420]];
   const rib = (x0: number, x1: number, y: number): string =>
-    Array.from({ length: 14 }, (_, i) => line(`M ${fmt(x0 + ((x1 - x0) * i) / 13)} ${y} v 18`, ' opacity="0.45"')).join('');
+    Array.from({ length: 14 }, (_, i) => line(`M ${fmt(x0 + ((x1 - x0) * i) / 13)} ${y} v 18`, { opacity: 0.45 })).join('');
   return {
     w, h, defs,
     body: shape(polygon(mirror(half, cx)), fill) + shape('M 204 118 Q 256 150 308 118 Q 256 176 204 118 Z', shade(base, 0.1)) +
-      rect(164, 420, 184, 22, fill) + rib(170, 342, 420) + rect(96, 340, 44, 20, fill, 0, ` transform="rotate(-78 118 350)"`) +
-      rect(372, 340, 44, 20, fill, 0, ` transform="rotate(78 394 350)"`),
+      rect(164, 420, 184, 22, fill) + rib(170, 342, 420) + rect(96, 340, 44, 20, fill, 0, { transform: 'rotate(-78 118 350)' }) +
+      rect(372, 340, 44, 20, fill, 0, { transform: 'rotate(78 394 350)' }),
   };
 };
 
@@ -134,9 +139,9 @@ const trousers: Gen = (c) => {
   const left: Pt[] = [[172, 96], [340, 96], [340, 128], [368 + flare, 480], [276, 480], [256, 250], [236, 480], [144 - flare, 480], [172, 128]];
   return {
     w, h,
-    body: shape(polygon(left), base) + rect(172, 96, 168, 32, shade(base, 0.08)) + line('M 256 128 L 256 250', ' opacity="0.5"') +
-      line('M 172 140 Q 210 150 214 190', ' opacity="0.5"') + line('M 340 140 Q 302 150 298 190', ' opacity="0.5"') +
-      (denim ? line('M 148 470 H 232', ' opacity="0.35"') + line('M 280 470 H 364', ' opacity="0.35"') : ''),
+    body: shape(polygon(left), base) + rect(172, 96, 168, 32, shade(base, 0.08)) + line('M 256 128 L 256 250', { opacity: 0.5 }) +
+      line('M 172 140 Q 210 150 214 190', { opacity: 0.5 }) + line('M 340 140 Q 302 150 298 190', { opacity: 0.5 }) +
+      (denim ? line('M 148 470 H 232', { opacity: 0.35 }) + line('M 280 470 H 364', { opacity: 0.35 }) : ''),
   };
 };
 
@@ -148,7 +153,7 @@ const skirtA: Gen = (c) => {
   return {
     w, h, defs,
     body: shape(polygon([[190, 118], [322, 118], [384, 408], [128, 408]]), fill) + rect(190, 96, 132, 24, shade(base, 0.08)) +
-      (pleats ? [0.2, 0.4, 0.6, 0.8].map((t) => line(`M ${fmt(190 + 132 * t)} 120 L ${fmt(128 + 256 * t)} 408`, ' opacity="0.3"')).join('') : ''),
+      (pleats ? [0.2, 0.4, 0.6, 0.8].map((t) => line(`M ${fmt(190 + 132 * t)} 120 L ${fmt(128 + 256 * t)} 408`, { opacity: 0.3 })).join('') : ''),
   };
 };
 
@@ -159,7 +164,7 @@ const skirtPencil: Gen = (c) => {
   return {
     w, h, defs,
     body: shape(polygon([[184, 112], [328, 112], [334, 300], [318, 456], [194, 456], [178, 300]]), fill) + rect(184, 92, 144, 22, shade(base, 0.08)) +
-      line('M 256 380 L 256 456', ' opacity="0.4"'),
+      line('M 256 380 L 256 456', { opacity: 0.4 }),
   };
 };
 
@@ -170,7 +175,7 @@ const shorts: Gen = (c) => {
   return {
     w, h, defs,
     body: shape(polygon([[168, 60], [344, 60], [344, 92], [372, 300], [276, 300], [256, 200], [236, 300], [140, 300], [168, 92]]), fill) +
-      rect(168, 60, 176, 32, shade(base, 0.08)) + line('M 256 92 L 256 200', ' opacity="0.5"'),
+      rect(168, 60, 176, 32, shade(base, 0.08)) + line('M 256 92 L 256 200', { opacity: 0.5 }),
   };
 };
 
@@ -190,7 +195,7 @@ const slipDress: Gen = (c) => {
   const half: Pt[] = [[204, 40], [198, 40], [180, 140], [186, 300], [150, 480], [256, 480]];
   return {
     w, h,
-    body: shape(polygon(mirror(half, cx)), base) + line('M 204 40 L 256 150 L 308 40') + line('M 180 140 L 256 150 L 332 140', ' opacity="0.5"'),
+    body: shape(polygon(mirror(half, cx)), base) + line('M 204 40 L 256 150 L 308 40') + line('M 180 140 L 256 150 L 332 140', { opacity: 0.5 }),
   };
 };
 
@@ -201,8 +206,8 @@ const wrapDress: Gen = (c) => {
   const half: Pt[] = [[190, 62], [150, 76], [104, 220], [142, 232], [166, 200], [160, 240], [110, 500], [256, 500]];
   return {
     w, h, defs,
-    body: shape(polygon(mirror(half, cx)), fill) + line('M 190 62 L 256 210 L 322 62') + line('M 166 240 H 346', ' opacity="0.6"') +
-      line('M 256 240 Q 236 300 262 340', ' opacity="0.5"'),
+    body: shape(polygon(mirror(half, cx)), fill) + line('M 190 62 L 256 210 L 322 62') + line('M 166 240 H 346', { opacity: 0.6 }) +
+      line('M 256 240 Q 236 300 262 340', { opacity: 0.5 }),
   };
 };
 
@@ -218,7 +223,7 @@ const trench: Gen = (c) => {
       shape('M 196 60 L 256 200 L 316 60 L 300 48 L 256 150 L 212 48 Z', shade(base, 0.12)) +
       rect(160, 264, 192, 22, shade(base, 0.1)) + rect(246, 260, 20, 30, base, 2) +
       buttons(232, 220, 400, 3) + buttons(280, 220, 400, 3) +
-      line('M 166 250 L 144 490', ' opacity="0.25"') + line('M 346 250 L 368 490', ' opacity="0.25"'),
+      line('M 166 250 L 144 490', { opacity: 0.25 }) + line('M 346 250 L 368 490', { opacity: 0.25 }),
   };
 };
 
@@ -231,7 +236,7 @@ const blazer: Gen = (c) => {
     w, h, defs,
     body: shape(polygon(mirror(half, cx)), fill) +
       shape('M 200 70 L 256 250 L 312 70 L 292 58 L 256 170 L 220 58 Z', shade(base, 0.14)) +
-      circle(256, 290, 6, METALS[1]!) + line('M 180 330 h 40', ' opacity="0.5"') + line('M 292 330 h 40', ' opacity="0.5"'),
+      circle(256, 290, 6, METALS[1]!) + line('M 180 330 h 40', { opacity: 0.5 }) + line('M 292 330 h 40', { opacity: 0.5 }),
   };
 };
 
@@ -239,12 +244,12 @@ const puffer: Gen = (c) => {
   const w = 512, h = 512;
   const base = c.r.pick(['#1c1c1e', '#6b7048', '#b5342a', '#ece4d2', '#2c4fa3', '#d3a53a', '#e5b3a6']);
   const quilt = (x0: number, x1: number, y0: number, y1: number, n: number): string =>
-    Array.from({ length: n - 1 }, (_, i) => line(`M ${x0} ${fmt(y0 + ((y1 - y0) * (i + 1)) / n)} Q ${fmt((x0 + x1) / 2)} ${fmt(y0 + ((y1 - y0) * (i + 1)) / n + 8)} ${x1} ${fmt(y0 + ((y1 - y0) * (i + 1)) / n)}`, ' opacity="0.55"')).join('');
+    Array.from({ length: n - 1 }, (_, i) => line(`M ${x0} ${fmt(y0 + ((y1 - y0) * (i + 1)) / n)} Q ${fmt((x0 + x1) / 2)} ${fmt(y0 + ((y1 - y0) * (i + 1)) / n + 8)} ${x1} ${fmt(y0 + ((y1 - y0) * (i + 1)) / n)}`, { opacity: 0.55 })).join('');
   // Sleeves as continuous quilted columns behind the body, not stacked pills.
   let out = rect(84, 118, 76, 280, base, 34) + quilt(90, 154, 118, 398, 6) + rect(352, 118, 76, 280, base, 34) + quilt(358, 422, 118, 398, 6);
   out += rect(146, 104, 220, 344, base, 30) + quilt(150, 362, 104, 448, 7);
   out += shape('M 196 104 L 208 66 Q 256 84 304 66 L 316 104 Z', shade(base, 0.12));
-  out += line('M 256 104 L 256 448', ' opacity="0.7"') + line('M 256 104 L 256 448', ' stroke-dasharray="3 6" stroke="#ffffff" opacity="0.5"');
+  out += line('M 256 104 L 256 448', { opacity: 0.7 }) + line('M 256 104 L 256 448', { 'stroke-dasharray': '3 6', stroke: '#ffffff', opacity: 0.5 });
   return { w, h, body: out };
 };
 
@@ -274,9 +279,9 @@ const sneaker: Gen = (c) => {
     body: rect(36, 206, 444, 46, sole, 22) + rect(36, 230, 444, 22, shade(sole, 0.25), 11) +
       shape(`${top} L 472 214 L 64 214 Z`, base) +
       shape('M 372 130 Q 430 160 472 206 L 472 214 L 350 214 Z', shade(base, 0.12)) +
-      line('M 118 100 Q 150 128 190 118', ' opacity="0.5"') + line('M 72 138 Q 100 190 110 214', ' opacity="0.35"') +
-      [0, 1, 2, 3, 4].map((i) => line(`M ${206 + i * 28} ${104 + i * 9} l 22 ${8 - (i % 2) * 16}`, '')).join('') +
-      line('M 200 100 L 330 148', ' opacity="0.3"'),
+      line('M 118 100 Q 150 128 190 118', { opacity: 0.5 }) + line('M 72 138 Q 100 190 110 214', { opacity: 0.35 }) +
+      [0, 1, 2, 3, 4].map((i) => line(`M ${206 + i * 28} ${104 + i * 9} l 22 ${8 - (i % 2) * 16}`)).join('') +
+      line('M 200 100 L 330 148', { opacity: 0.3 }),
   };
 };
 
@@ -288,7 +293,7 @@ const heel: Gen = (c) => {
   return {
     w, h,
     body: shape('M 116 236 L 178 236 L 162 308 L 138 308 Z', shade(base, 0.3)) + shape(upper, base) +
-      line('M 150 128 Q 250 196 420 176', ' opacity="0.55"') + line('M 176 232 Q 300 200 440 238', ' opacity="0.35"'),
+      line('M 150 128 Q 250 196 420 176', { opacity: 0.55 }) + line('M 176 232 Q 300 200 440 238', { opacity: 0.35 }),
   };
 };
 
@@ -299,7 +304,7 @@ const boot: Gen = (c) => {
     w, h,
     body: shape('M 120 60 L 250 60 L 254 300 Q 300 320 360 340 Q 380 360 370 400 L 100 400 Q 90 380 110 340 Z', base) +
       shape('M 100 400 L 370 400 L 372 430 L 96 430 Z', shade(base, 0.35)) + shape('M 100 400 L 150 400 L 150 440 L 96 440 Z', shade(base, 0.35)) +
-      shape('M 250 60 L 254 300 L 280 300 Q 270 200 268 60 Z', shade(base, 0.12)) + line('M 130 90 Q 190 120 246 92', ' opacity="0.4"'),
+      shape('M 250 60 L 254 300 L 280 300 Q 270 200 268 60 Z', shade(base, 0.12)) + line('M 130 90 Q 190 120 246 92', { opacity: 0.4 }),
   };
 };
 
@@ -310,7 +315,7 @@ const loafer: Gen = (c) => {
   return {
     w, h,
     body: rect(40, 196, 448, 30, shade(base, 0.35), 12) + shape('M 56 226 L 130 226 L 124 248 L 60 248 Z', shade(base, 0.35)) +
-      shape(upper, base) + line('M 130 118 Q 190 150 250 144 Q 320 140 420 154', ' opacity="0.55"') +
+      shape(upper, base) + line('M 130 118 Q 190 150 250 144 Q 320 140 420 154', { opacity: 0.55 }) +
       shape('M 210 138 Q 250 118 300 136 L 300 160 Q 250 146 210 160 Z', shade(base, 0.15)) + rect(240, 134, 28, 12, METALS[0]!, 3),
   };
 };
@@ -324,7 +329,7 @@ const sandal: Gen = (c) => {
   return {
     w, h,
     body: shape('M 40 150 Q 30 190 80 192 L 460 192 Q 500 190 486 156 Q 400 130 260 130 Q 120 130 40 150 Z', '#d9d2c4') +
-      strap('M 120 150 Q 180 76 250 142') + strap('M 300 140 Q 360 66 420 150') + line('M 150 120 Q 300 60 420 128', ' opacity="0.5"'),
+      strap('M 120 150 Q 180 76 250 142') + strap('M 300 140 Q 360 66 420 150') + line('M 150 120 Q 300 60 420 128', { opacity: 0.5 }),
   };
 };
 
@@ -337,7 +342,7 @@ const tote: Gen = (c) => {
   return {
     w, h, defs,
     body: line('M 150 150 Q 150 40 230 40 Q 310 40 310 150') + line('M 176 160 Q 176 70 230 70 Q 284 70 284 160') +
-      shape(polygon([[90, 150], [370, 150], [400, 470], [60, 470]]), fill) + line('M 90 150 L 370 150', '') +
+      shape(polygon([[90, 150], [370, 150], [400, 470], [60, 470]]), fill) + line('M 90 150 L 370 150') +
       (c.r.chance(0.5) ? rect(196, 280, 68, 40, shade(base, 0.2), 3) : ''),
   };
 };
@@ -383,15 +388,16 @@ const sunglasses: Gen = (c) => {
   const lens = c.r.pick(['#3a3a3f', '#6b4a3a', '#2f4a5e', '#8c8c8c']);
   const style = c.r.pick(['round', 'square', 'cat'] as const);
   const lensAt = (cx: number, flip: number): string => {
-    if (style === 'round') return circle(cx, 120, 62, lens);
-    if (style === 'square') return rect(cx - 66, 62, 132, 112, lens, 14);
-    return shape(`M ${cx - 70} 120 Q ${cx - 66} 60 ${cx + 10 * flip} 74 L ${cx + 72 * flip} 62 Q ${cx + 70 * flip} 170 ${cx} 176 Q ${cx - 66} 174 ${cx - 70} 120 Z`, lens);
+    const f = { stroke: frame, 'stroke-width': 7 };
+    if (style === 'round') return circle(cx, 120, 62, lens, f);
+    if (style === 'square') return rect(cx - 66, 62, 132, 112, lens, 14, f);
+    return shape(`M ${cx - 70} 120 Q ${cx - 66} 60 ${cx + 10 * flip} 74 L ${cx + 72 * flip} 62 Q ${cx + 70 * flip} 170 ${cx} 176 Q ${cx - 66} 174 ${cx - 70} 120 Z`, lens, f);
   };
   return {
     w, h,
-    body: `<g stroke="${frame}">` + lensAt(160, 1) + `<g transform="translate(512 0) scale(-1 1)">${lensAt(160, 1)}</g>` +
-      line('M 222 110 Q 256 92 290 110', ` stroke="${frame}" stroke-width="7"`) +
-      line('M 96 104 L 30 88', ` stroke="${frame}" stroke-width="7"`) + line('M 416 104 L 482 88', ` stroke="${frame}" stroke-width="7"`) + `</g>`,
+    body: lensAt(160, 1) + `<g transform="translate(512 0) scale(-1 1)">${lensAt(160, 1)}</g>` +
+      line('M 222 110 Q 256 92 290 110', { stroke: frame, 'stroke-width': 7 }) +
+      line('M 96 104 L 30 88', { stroke: frame, 'stroke-width': 7 }) + line('M 416 104 L 482 88', { stroke: frame, 'stroke-width': 7 }),
   };
 };
 
@@ -405,7 +411,7 @@ const hat: Gen = (c) => {
     case 'bucket': body = shape('M 140 200 L 172 90 Q 256 60 340 90 L 372 200 Z', fill) + shape('M 60 200 Q 256 260 452 200 Q 256 230 60 200 Z', shade(base, 0.12)) + line('M 60 200 Q 256 260 452 200'); break;
     case 'beret': body = shape('M 100 210 Q 90 90 256 80 Q 422 90 412 210 Q 256 240 100 210 Z', fill) + line('M 256 80 l 0 -22') + shape('M 130 206 Q 256 236 382 206 Q 256 224 130 206 Z', shade(base, 0.15)); break;
     case 'fedora': body = shape('M 40 210 Q 256 250 472 210 Q 256 240 40 210 Z', shade(base, 0.12)) + line('M 40 210 Q 256 250 472 210') + shape('M 150 210 L 176 96 Q 256 72 336 96 L 362 210 Z', fill) + rect(150, 178, 212, 22, shade(base, 0.3)); break;
-    case 'cap': body = shape('M 120 200 Q 130 80 256 80 Q 382 80 392 200 Z', fill) + shape('M 380 200 Q 470 190 490 230 Q 400 232 370 218 Z', shade(base, 0.12)) + line('M 256 80 L 256 200', ' opacity="0.4"') + line('M 190 96 Q 200 150 200 200', ' opacity="0.4"') + line('M 322 96 Q 312 150 312 200', ' opacity="0.4"'); break;
+    case 'cap': body = shape('M 120 200 Q 130 80 256 80 Q 382 80 392 200 Z', fill) + shape('M 380 200 Q 470 190 490 230 Q 400 232 370 218 Z', shade(base, 0.12)) + line('M 256 80 L 256 200', { opacity: 0.4 }) + line('M 190 96 Q 200 150 200 200', { opacity: 0.4 }) + line('M 322 96 Q 312 150 312 200', { opacity: 0.4 }); break;
   }
   return { w, h, defs, body };
 };
@@ -416,8 +422,8 @@ const necklace: Gen = (c) => {
   const stone = c.r.pick(['#2c4fa3', '#b5342a', '#2f5d3a', '#f6f3ec', '#7a4b6e', '#d3a53a']);
   return {
     w, h,
-    body: line('M 60 40 Q 60 300 200 330 Q 340 300 340 40', ` stroke="${metal}" stroke-width="6"`) +
-      line('M 60 40 Q 60 300 200 330 Q 340 300 340 40', ' stroke-dasharray="1 9" stroke-width="7" opacity="0.5"') +
+    body: line('M 60 40 Q 60 300 200 330 Q 340 300 340 40', { stroke: metal, 'stroke-width': 6 }) +
+      line('M 60 40 Q 60 300 200 330 Q 340 300 340 40', { 'stroke-dasharray': '1 9', 'stroke-width': 7, opacity: 0.5 }) +
       (c.r.chance(0.6) ? shape('M 200 340 L 236 380 L 200 428 L 164 380 Z', stone) : circle(200, 372, 30, stone)),
   };
 };
@@ -427,8 +433,8 @@ const earrings: Gen = (c) => {
   const metal = c.r.pick(METALS);
   const hoop = c.r.chance(0.5);
   const one = (cx: number): string =>
-    hoop ? circle(cx, 170, 80, 'none', ` stroke="${metal}" stroke-width="10"`) + circle(cx, 78, 8, metal)
-      : circle(cx, 70, 12, metal) + line(`M ${cx} 82 L ${cx} 150`, ` stroke="${metal}" stroke-width="5"`) + ellipse(cx, 200, 34, 52, c.r.pick(['#f6f3ec', '#2c4fa3', '#e5b3a6', '#1c1c1e']));
+    hoop ? circle(cx, 170, 80, 'none', { stroke: metal, 'stroke-width': 10 }) + circle(cx, 78, 8, metal)
+      : circle(cx, 70, 12, metal) + line(`M ${cx} 82 L ${cx} 150`, { stroke: metal, 'stroke-width': 5 }) + ellipse(cx, 200, 34, 52, c.r.pick(['#f6f3ec', '#2c4fa3', '#e5b3a6', '#1c1c1e']));
   return { w, h, body: one(110) + one(290) };
 };
 
@@ -436,7 +442,7 @@ const ring: Gen = (c) => {
   const w = 300, h = 300;
   const metal = c.r.pick(METALS);
   const stone = c.r.pick(['#f6f3ec', '#2c4fa3', '#b5342a', '#2f5d3a', '#1c1c1e']);
-  return { w, h, body: circle(150, 170, 90, 'none', ` stroke="${metal}" stroke-width="22"`) + circle(150, 170, 90, 'none') + shape('M 150 44 L 190 78 L 150 112 L 110 78 Z', stone) };
+  return { w, h, body: circle(150, 170, 90, 'none', { stroke: metal, 'stroke-width': 22 }) +  shape('M 150 44 L 190 78 L 150 112 L 110 78 Z', stone) };
 };
 
 const watch: Gen = (c) => {
@@ -447,8 +453,8 @@ const watch: Gen = (c) => {
   return {
     w, h,
     body: rect(110, 30, 80, 452, strap, 14) + circle(150, 256, 96, metal) + circle(150, 256, 80, face) +
-      line('M 150 256 L 150 200', ` stroke="${face === '#f6f3ec' ? INK : '#f6f3ec'}" stroke-width="5"`) +
-      line('M 150 256 L 190 270', ` stroke="${face === '#f6f3ec' ? INK : '#f6f3ec'}" stroke-width="5"`) + rect(244, 240, 16, 32, metal, 4),
+      line('M 150 256 L 150 200', { stroke: face === '#f6f3ec' ? INK : '#f6f3ec', 'stroke-width': 5 }) +
+      line('M 150 256 L 190 270', { stroke: face === '#f6f3ec' ? INK : '#f6f3ec', 'stroke-width': 5 }) + rect(244, 240, 16, 32, metal, 4),
   };
 };
 
@@ -460,7 +466,7 @@ const scarf: Gen = (c) => {
   return {
     w, h, defs,
     body: shape(openSpline(pts) + ` L 490 170 ` + openSpline([...pts].reverse().map(([x, y]) => [x, y + 60] as Pt)).replace('M', 'L') + ' Z', fill) +
-      Array.from({ length: 5 }, (_, i) => line(`M ${30 + i * 4} ${122 + i * 12} l -18 22`, '')).join(''),
+      Array.from({ length: 5 }, (_, i) => line(`M ${30 + i * 4} ${122 + i * 12} l -18 22`)).join(''),
   };
 };
 
@@ -470,8 +476,8 @@ const belt: Gen = (c) => {
   const metal = c.r.pick(METALS);
   return {
     w, h,
-    body: rect(60, 60, 430, 44, base, 6) + rect(40, 46, 70, 72, 'none', 10, ` stroke="${metal}" stroke-width="10"`) +
-      line('M 75 46 L 75 118', ` stroke="${metal}" stroke-width="8"`) + [200, 240, 280].map((x) => circle(x, 82, 5, shade(base, 0.4))).join(''),
+    body: rect(60, 60, 430, 44, base, 6) + rect(40, 46, 70, 72, 'none', 10, { stroke: metal, 'stroke-width': 10 }) +
+      line('M 75 46 L 75 118', { stroke: metal, 'stroke-width': 8 }) + [200, 240, 280].map((x) => circle(x, 82, 5, shade(base, 0.4))).join(''),
   };
 };
 
@@ -514,7 +520,7 @@ const compact: Gen = (c) => {
   return {
     w, h,
     body: (c.r.chance(0.5) ? circle(180, 180, 140, shell) : rect(50, 50, 260, 260, shell, 40)) + circle(180, 180, 96, '#dfe6ec') +
-      line('M 130 130 L 150 150', ' stroke="#ffffff" stroke-width="6" opacity="0.8"'),
+      line('M 130 130 L 150 150', { stroke: '#ffffff', 'stroke-width': 6, opacity: 0.8 }),
   };
 };
 
