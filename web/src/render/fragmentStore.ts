@@ -9,8 +9,8 @@
  * raster survives a gesture untouched and interaction stays at 60fps.
  */
 import type { AppliedVerb, FragmentRef } from '@collage/shared/version';
-import { runVerbs, pipelineKey, type PipelineOptions } from '../verbs/pipeline.ts';
-import type { Bitmap } from '../verbs/types.ts';
+import { pipelineKey, type PipelineOptions } from '../verbs/pipeline.ts';
+import type { VerbJob, VerbResult } from '../verbs/worker.ts';
 import { resolveUploadUrl } from '../tray/uploads.ts';
 import { localFragmentUrl } from '../tray/local.ts';
 
@@ -40,9 +40,15 @@ export class FragmentStore {
   private sources = new Map<string, HTMLImageElement>();
   private loading = new Map<string, Promise<HTMLImageElement>>();
   private processed = new Map<string, Processed>();
-  private working = new Set<string>();
   private failed = new Set<string>();
   private order: string[] = [];
+
+  /** The pipeline runs in a worker. At most one job per fragment is in
+   *  flight; a newer request for the same fragment replaces the one waiting,
+   *  so a slider drag processes the latest value rather than every value. */
+  private worker: Worker | null = null;
+  private inFlight = new Map<string, string>();   // fragment id → key
+  private waiting = new Map<string, VerbJob>();   // fragment id → next job
   /** Called whenever new pixels become available and the canvas should repaint. */
   onChange: () => void = () => {};
 
@@ -94,54 +100,65 @@ export class FragmentStore {
 
   /**
    * The verb-processed raster, or undefined while it is being produced. The
-   * caller draws `rawRaster` in the meantime.
+   * caller draws a placeholder in the meantime.
    */
   get(ref: FragmentRef, sizePx: number, verbs: AppliedVerb[], opts: PipelineOptions): Processed | undefined {
     const size = sizeBucket(sizePx);
     const key = pipelineKey(ref.id, size, verbs, opts);
     const hit = this.processed.get(key);
     if (hit) return hit;
+    const aspect = (ref.h ?? 512) / (ref.w ?? 512);
+    const h = Math.round(size * aspect);
     if (verbs.length === 0 && !opts.paletteRamp?.length) {
-      const aspect = (ref.h ?? 512) / (ref.w ?? 512);
-      const c = this.rasterise(ref, size, Math.round(size * aspect));
+      const c = this.rasterise(ref, size, h);
       if (!c) return undefined;
       const out: Processed = { canvas: c, padLeft: 0, padTop: 0, size };
       this.remember(key, out);
       return out;
     }
-    if (!this.working.has(key)) {
-      this.working.add(key);
-      // Yielding first keeps the gesture that triggered this from stuttering.
-      queueMicrotask(() => {
-        try {
-          const aspect = (ref.h ?? 512) / (ref.w ?? 512);
-          const h = Math.round(size * aspect);
-          const raw = this.rasterise(ref, size, h);
-          if (!raw) { this.working.delete(key); return; }
-          const ctx = raw.getContext('2d') as CanvasRenderingContext2D;
-          const img = ctx.getImageData(0, 0, size, h);
-          const bmp: Bitmap = { data: img.data, width: size, height: h };
-          const result = runVerbs(bmp, verbs, opts);
-          const out = makeCanvas(result.bitmap.width, result.bitmap.height);
-          const octx = out.getContext('2d') as CanvasRenderingContext2D;
-          octx.putImageData(
-            new ImageData(
-              result.bitmap.data as Uint8ClampedArray<ArrayBuffer>,
-              result.bitmap.width,
-              result.bitmap.height,
-            ),
-            0, 0,
-          );
-          this.remember(key, { canvas: out, padLeft: result.padLeft, padTop: result.padTop, size });
-          this.onChange();
-        } catch (err) {
-          console.warn('verb pipeline failed', err);
-        } finally {
-          this.working.delete(key);
-        }
-      });
-    }
+    if (this.inFlight.get(ref.id) === key || this.waiting.get(ref.id)?.key === key) return undefined;
+
+    const raw = this.rasterise(ref, size, h);
+    if (!raw) return undefined;
+    const img = (raw.getContext('2d') as CanvasRenderingContext2D).getImageData(0, 0, size, h);
+    const job: VerbJob = {
+      key, data: img.data, width: size, height: h, verbs,
+      // Only what crosses the thread boundary cleanly.
+      opts: { paletteRamp: opts.paletteRamp, paletteStrength: opts.paletteStrength, paper: opts.paper, seed: opts.seed },
+    };
+    if (this.inFlight.has(ref.id)) this.waiting.set(ref.id, job); // latest wins
+    else this.post(ref.id, job);
     return undefined;
+  }
+
+  private post(refId: string, job: VerbJob): void {
+    this.inFlight.set(refId, job.key);
+    this.ensureWorker().postMessage(job, [job.data.buffer as ArrayBuffer]);
+  }
+
+  private ensureWorker(): Worker {
+    if (this.worker) return this.worker;
+    this.worker = new Worker(new URL('../verbs/worker.ts', import.meta.url), { type: 'module' });
+    this.worker.onmessage = (e: MessageEvent<VerbResult>) => {
+      const r = e.data;
+      const refId = r.key.split('|')[0]!;
+      const size = Number(r.key.split('|')[1]);
+      const out = makeCanvas(r.width, r.height);
+      (out.getContext('2d') as CanvasRenderingContext2D).putImageData(
+        new ImageData(r.data as Uint8ClampedArray<ArrayBuffer>, r.width, r.height), 0, 0,
+      );
+      this.remember(r.key, { canvas: out, padLeft: r.padLeft, padTop: r.padTop, size });
+      this.inFlight.delete(refId);
+      const next = this.waiting.get(refId);
+      if (next) { this.waiting.delete(refId); this.post(refId, next); }
+      this.onChange();
+    };
+    this.worker.onerror = (err) => {
+      console.warn('verb worker failed', err);
+      this.inFlight.clear();
+      this.waiting.clear();
+    };
+    return this.worker;
   }
 
   /** The un-processed raster, for the optimistic placeholder. */
@@ -160,7 +177,8 @@ export class FragmentStore {
   /** Whether every layer in a composition has final pixels — the export path
    *  waits on this so a share never captures a placeholder. */
   isSettled(): boolean {
-    return this.working.size === 0 && this.loading.size === this.sources.size + this.failed.size;
+    return this.inFlight.size === 0 && this.waiting.size === 0 &&
+      this.loading.size === this.sources.size + this.failed.size;
   }
 
   private remember(key: string, p: Processed): void {

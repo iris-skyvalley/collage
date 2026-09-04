@@ -12,11 +12,14 @@ import { track, trackFirstChange } from '../lib/metrics.ts';
 export class FragmentPanel {
   readonly el: HTMLElement;
   private body: HTMLElement;
+  /** True while a slider is being dragged. The store changes on every tick,
+   *  and rebuilding the panel would replace the slider under the pointer. */
+  private sliding = false;
 
   constructor() {
     this.body = el('div', { class: 'panel-body' });
     this.el = el('div', { class: 'panel' }, [this.body]);
-    store.subscribe(() => this.render());
+    store.subscribe(() => { if (!this.sliding) this.render(); });
     this.render();
   }
 
@@ -53,8 +56,8 @@ export class FragmentPanel {
         this.apply(layer.id, 'edge', id === 'clean' ? null : { style: id, roughness });
       }),
       [style === 'clean' ? null : slider('Roughness', roughness,
-        (v) => this.apply(layer.id, 'edge', { style, roughness: v }, false),
-        (v) => this.apply(layer.id, 'edge', { style, roughness: v }))],
+        (v) => { this.sliding = true; this.apply(layer.id, 'edge', { style, roughness: v }, false); },
+        (v) => { this.sliding = false; this.apply(layer.id, 'edge', { style, roughness: v }); })],
     );
   }
 

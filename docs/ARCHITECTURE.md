@@ -42,6 +42,16 @@ gesture. The pipeline runs when a verb changes, which is a tap, not a frame.
 raster and re-buckets on release, instead of re-running the pipeline at every
 intermediate size.
 
+**The pipeline runs in a Web Worker** (`web/src/verbs/worker.ts`), with at
+most one job in flight per fragment and a newer request replacing the one
+waiting — so a slider drag processes the latest value rather than every value,
+and the main thread never stalls on a distance transform. While a new result
+is computing the renderer keeps drawing the last good one for that layer, so
+the canvas never flashes back to the untreated fragment between steps. The
+verbs are pure functions on RGBA buffers, which is what makes this a
+twenty-line change rather than a rewrite; the same functions run under
+`node --test`.
+
 ## Edge, and why it uses a distance field
 
 PRD §8.3 calls edge the highest-priority verb: "in the reference collage the

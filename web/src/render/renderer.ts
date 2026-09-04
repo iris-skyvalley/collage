@@ -9,7 +9,12 @@
 import { PIECE } from '@collage/shared/constants';
 import { orderedLayers, type Composition, type Layer } from '@collage/shared/version';
 import { renderSubstrate } from './substrate.ts';
-import { fragmentStore } from './fragmentStore.ts';
+import { fragmentStore, type Processed } from './fragmentStore.ts';
+
+/** The last processed raster drawn for each layer. While a newer one is
+ *  computing this is what shows, so a slider drag never flashes back to the
+ *  untreated fragment between steps. */
+const lastGood = new Map<string, Processed>();
 import type { PipelineOptions } from '../verbs/pipeline.ts';
 import { HANDLE_SIZE, ROTATE_STEM } from './selection.ts';
 
@@ -84,7 +89,9 @@ function drawLayer(
   if (contentW < 0.5) return;
 
   const seedOpts: PipelineOptions = { ...pipelineOpts, seed: hashLayerSeed(layer.id) };
-  const processed = fragmentStore.get(ref, contentW, layer.verbs, seedOpts);
+  let processed = fragmentStore.get(ref, contentW, layer.verbs, seedOpts);
+  if (processed) lastGood.set(layer.id, processed);
+  else if (!opts.finalOnly) processed = lastGood.get(layer.id);
   const image = processed?.canvas ?? (opts.finalOnly ? undefined : fragmentStore.raw(ref, contentW));
   if (!image) return;
 
