@@ -64,15 +64,16 @@ export class Tray {
 
   private render(): void {
     clear(this.strip);
-    for (const item of this.items) this.strip.append(this.cell(item));
     // A photo is a fragment like any other, so it is offered where the
-    // fragments are: the last tile in the grid.
+    // fragments are — and first, where it can be seen without scrolling
+    // past sixty of them.
     this.strip.append(el('button', {
       class: 'tray-add',
       type: 'button',
       text: 'your photo',
       onclick: () => this.pickPhoto(),
     }));
+    for (const item of this.items) this.strip.append(this.cell(item));
   }
 
   private cell(item: TrayItem): HTMLElement {

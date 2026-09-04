@@ -31,6 +31,9 @@ html, body {
 
 button, input { font: inherit; color: inherit; }
 button { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; }
+/* A focus ring for the keyboard, not for the mouse. */
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 
 #app {
   display: flex;
