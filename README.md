@@ -33,6 +33,19 @@ npm test         # 60 tests: the data contract, the verbs, the server
 npm run typecheck
 ```
 
+## How it is laid out
+
+One canvas, one dock beneath it, no tabs. The dock shows the tray — themes,
+a grid of cutouts, the palette — when nothing is selected, and the selected
+piece's controls when something is: an **Edge** row, a **Material** row, and
+a line of actions (front, back, flip, remove, back to the tray). Tap the
+paper, press Escape, or tap *Tray* to get the tray back. Nothing is more than
+one row deep.
+
+With a mouse: drag to move, drag a corner to resize, drag the stem above the
+top edge to rotate (Shift snaps to 15°), scroll to scale, Delete to remove,
+arrows to nudge. With touch: drag to move, pinch to scale and rotate.
+
 ## What is here
 
 ```
@@ -107,10 +120,16 @@ Against PRD §12:
   two hard constraints, so the canvas is drawn as large as 4:5 permits and the
   number lands at 56%. `node tools/dev/measure.ts` reports it for any
   viewport.
-- **M1 — Verbs.** Edge, material and palette are complete and run locally with
-  no provider. Cut ships its region mode; extend ships local extrapolation;
-  relight ships a measured light match. All three carry a provider seam for a
-  hosted model — see *Where the AI goes* in `docs/ARCHITECTURE.md`.
+- **M1 — Verbs.** Edge, material and palette are complete, run locally with
+  no provider, and are what the editor offers. Cut (region mode), extend
+  (local extrapolation) and relight (a measured light match) are implemented
+  and render on any piece that carries them, but are not in the editor: they
+  are the PRD's "after" tier, and without a model behind them they read as
+  three more rows of controls rather than as the semantic tools §8.3
+  describes. They come back when a provider does — see *Where the AI goes* in
+  `docs/ARCHITECTURE.md`. Material offers three of its six looks for the same
+  reason: newsprint, riso and photocopy read as distinct things at phone
+  scale; halftone, textile and satellite read as variations.
 - **M2 — Artifact.** Complete. Three exports, permanent URLs, OG cards, share
   sheet, and the replay.
 - **M3 — Persistence.** Anonymous device save and the claim flow are complete.

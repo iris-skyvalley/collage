@@ -15,7 +15,7 @@ const sender = await senderCtx.newPage();
 await sender.goto(BASE, { waitUntil: 'networkidle' });
 await sender.waitForSelector('.tray-item');
 for (const i of [1, 6, 11, 3]) {
-  await sender.locator('.tab', { hasText: 'Tray' }).click();
+  await sender.keyboard.press('Escape');
   await sender.locator('.tray-item').nth(i).click();
   await sender.waitForTimeout(120);
 }
@@ -44,7 +44,7 @@ console.log(`landed on their piece in ${Date.now() - t0}ms`);
 await rx.screenshot({ path: `${SP}/11-link-arrival.png` });
 
 // The knobs are already there: change something without opening an editor.
-await rx.locator('.tab', { hasText: 'Tray' }).click();
+await rx.keyboard.press('Escape');
 await rx.locator('.palette-row .chip', { hasText: 'Riso duo' }).click();
 await rx.waitForTimeout(900);
 console.log(`first change at ${Date.now() - t0}ms from load`);

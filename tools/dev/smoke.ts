@@ -27,7 +27,7 @@ await page.screenshot({ path: `${SP}/01-cold-arrival.png` });
 
 // Place a few fragments.
 for (const i of [0, 7, 3, 12, 5]) {
-  await page.locator('.tab', { hasText: 'Tray' }).click();
+  await page.keyboard.press('Escape');
   await page.locator('.tray-item').nth(i).click();
   await page.waitForTimeout(180);
 }
@@ -43,19 +43,17 @@ await page.mouse.up();
 await page.waitForTimeout(200);
 
 // Edge, the highest-priority verb.
-await page.locator('.verb-tab', { hasText: 'Edge' }).click();
 await page.locator('.chip', { hasText: 'Torn' }).click();
 await page.waitForTimeout(900);
 await page.screenshot({ path: `${SP}/03-torn-edge.png` });
 
 // Material.
-await page.locator('.verb-tab', { hasText: 'Material' }).click();
 await page.locator('.chip', { hasText: 'Riso' }).click();
 await page.waitForTimeout(900);
 await page.screenshot({ path: `${SP}/04-material.png` });
 
 // Paper + palette, document-level.
-await page.locator('.tab', { hasText: 'Tray' }).click();
+await page.keyboard.press('Escape');
 await page.locator('.palette-row .chip', { hasText: 'Cyanotype' }).click();
 await page.waitForTimeout(1200);
 await page.screenshot({ path: `${SP}/05-paper-palette.png` });

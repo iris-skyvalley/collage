@@ -24,17 +24,13 @@ import { ExportSheet } from './exportSheet.ts';
 import { LinkBar } from './linkBar.ts';
 import { el, clear } from './dom.ts';
 
-type Tab = 'tray' | 'fragment';
-
 export class App {
   private surface!: CanvasSurface;
   private tray!: Tray;
   private fragmentPanel!: FragmentPanel;
   private exportSheet!: ExportSheet;
-  private tabsEl!: HTMLElement;
   private panelHost!: HTMLElement;
   private headerRight!: HTMLElement;
-  private tab: Tab = 'tray';
   private banner!: HTMLElement;
   private linkBar = new LinkBar();
 
@@ -42,7 +38,6 @@ export class App {
     const stage = el('div', { class: 'stage' });
     this.banner = el('div', { class: 'banner', hidden: true });
     this.headerRight = el('div', { class: 'header-right' });
-    this.tabsEl = el('div', { class: 'tabs', role: 'tablist' });
     this.panelHost = el('div', { class: 'panel-host' });
 
     root.append(
@@ -53,7 +48,7 @@ export class App {
       this.banner,
       this.linkBar.el,
       stage,
-      el('div', { class: 'dock' }, [this.tabsEl, this.panelHost]),
+      el('div', { class: 'dock' }, [this.panelHost]),
     );
 
     this.surface = new CanvasSurface(stage);
@@ -62,8 +57,8 @@ export class App {
     this.exportSheet = new ExportSheet();
     root.append(this.exportSheet.el);
 
-    this.tray = new Tray(() => this.setTab('fragment'));
-    this.fragmentPanel = new FragmentPanel(this.surface);
+    this.tray = new Tray(() => this.showPanel());
+    this.fragmentPanel = new FragmentPanel();
 
     root.addEventListener('tray:full', () => {
       this.flash(`${MAX_LAYERS} pieces is the cap. Take something off to add something new.`);
@@ -71,18 +66,18 @@ export class App {
 
     let lastSelected: string | null = null;
     store.subscribe((s) => {
-      // Selecting a piece brings its knobs up; letting go returns the tray.
+      // No tabs: selecting a piece brings its knobs up, and tapping the paper
+      // brings the tray back. The dock shows whichever the canvas implies.
       if (s.selectedId !== lastSelected) {
         lastSelected = s.selectedId;
-        this.setTab(s.selectedId ? 'fragment' : 'tray');
+        this.showPanel();
       }
       this.renderHeader();
     });
 
     await this.route();
-    this.renderTabs();
     this.renderHeader();
-    this.setTab(this.tab);
+    this.showPanel();
     track('session_start', { entry: store.get().entry });
   }
 
@@ -169,30 +164,11 @@ export class App {
     );
   }
 
-  private renderTabs(): void {
-    clear(this.tabsEl);
-    const tabs: { id: Tab; label: string }[] = [
-      { id: 'tray', label: 'Tray' },
-      { id: 'fragment', label: 'Piece' },
-    ];
-    for (const t of tabs) {
-      this.tabsEl.append(el('button', {
-        class: `tab${t.id === this.tab ? ' is-active' : ''}`,
-        type: 'button',
-        role: 'tab',
-        'aria-selected': t.id === this.tab,
-        text: t.label,
-        onclick: () => this.setTab(t.id),
-      }));
-    }
-  }
-
-  private setTab(tab: Tab): void {
-    this.tab = tab;
+  private showPanel(): void {
+    const selected = store.get().selectedId !== null;
     clear(this.panelHost);
-    this.panelHost.append(tab === 'tray' ? this.tray.el : this.fragmentPanel.el);
-    if (tab === 'fragment') this.fragmentPanel.render();
-    this.renderTabs();
+    this.panelHost.append(selected ? this.fragmentPanel.el : this.tray.el);
+    if (selected) this.fragmentPanel.render();
   }
 
   private flash(message: string, ms = 4200): void {

@@ -25,9 +25,13 @@ sources are listed below.)
 - **The grid of cutouts.** White tiles, hairline borders, 2px radius, the
   fragment centred. Two rows that scroll sideways. This is the tray, and the
   tray is the product.
-- **Text, not chrome.** Tabs, verbs, styles and layer actions are plain words;
-  the active one is dark and, where a row needs it, underlined. There are no
+- **Text, not chrome.** Verbs, styles and layer actions are plain words; the
+  active one is dark and, where a row needs it, underlined. There are no
   chips, pills, or boxes around options.
+- **One level.** There are no tabs. The dock shows the tray when nothing is
+  selected and the piece's two rows — edge, material — when something is.
+  Polyvore's editor had the same shape: the item panel was simply there, and
+  the tools for a selected item appeared when you selected one.
 - **The selection.** A hairline rectangle with four square corner handles,
   drawn white-under-black so it reads on any fragment. This is the most
   recognisable Polyvore tell and it survives intact.

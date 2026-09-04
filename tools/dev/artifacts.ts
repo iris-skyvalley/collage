@@ -19,7 +19,7 @@ await page.goto(BASE, { waitUntil: 'networkidle' });
 await page.waitForSelector('.tray-item');
 
 for (const i of [0, 5, 9, 2, 14, 20, 7]) {
-  await page.locator('.tab', { hasText: 'Tray' }).click();
+  await page.keyboard.press('Escape');
   await page.locator('.tray-item').nth(i).click();
   await page.waitForTimeout(140);
 }
@@ -39,9 +39,8 @@ const styles = ['Torn', 'Deckle', 'Burnt', 'Scissor'];
 for (let i = 0; i < styles.length; i++) {
   const p = scatter(i);
   await page.mouse.click(box.x + (p.x / 1080) * box.width, box.y + (p.y / 1350) * box.height);
-  if (!(await page.locator('.verb-tab').count())) { console.log(`! layer ${i} not selectable`); continue; }
-  await page.locator('.verb-tab', { hasText: 'Edge' }).click();
-  await page.locator('.chip', { hasText: new RegExp(`^${styles[i]}$`) }).click();
+  if (!(await page.locator('.verb-row').count())) { console.log(`! layer ${i} not selectable`); continue; }
+    await page.locator('.chip', { hasText: new RegExp(`^${styles[i]}$`) }).click();
   await page.waitForTimeout(600);
 }
 console.log('verbs on canvas:', await page.evaluate(() => {
@@ -51,7 +50,7 @@ console.log('verbs on canvas:', await page.evaluate(() => {
   return d.comp.layers.map((l) => l.verbs.map((v) => `${v.verb}:${v.params['style'] ?? ''}`).join('+') || '-').join(' ');
 }));
 
-await page.locator('.tab', { hasText: 'Tray' }).click();
+await page.keyboard.press('Escape');
 await page.locator('.palette-row .chip', { hasText: 'Foxed' }).click();
 await page.waitForTimeout(1200);
 await page.screenshot({ path: `${SP}/editor.png` });

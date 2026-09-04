@@ -112,7 +112,7 @@ button { appearance: none; background: none; border: 0; padding: 0; cursor: poin
   user-select: none;
 }
 
-/* --- dock: one rule, text tabs, then the panel --- */
+/* --- dock: one rule, then whatever the canvas implies --- */
 .dock {
   flex: 1 1 auto;
   display: flex;
@@ -121,20 +121,6 @@ button { appearance: none; background: none; border: 0; padding: 0; cursor: poin
   min-height: 0;
   background: var(--ground);
 }
-.tabs {
-  display: flex;
-  gap: 20px;
-  padding: 0 16px;
-  flex: 0 0 auto;
-}
-.tab {
-  color: var(--dim);
-  padding: 12px 0 10px;
-  border-bottom: 1px solid transparent;
-  margin-bottom: -1px;
-}
-.tab.is-active { color: var(--ink); border-bottom-color: var(--ink); }
-
 .panel-host { overflow: hidden auto; min-height: 0; }
 
 /* --- tray: the grid of cutouts --- */
@@ -210,15 +196,20 @@ button { appearance: none; background: none; border: 0; padding: 0; cursor: poin
 .palette-row .chip { flex: 0 0 auto; font-size: 13px; min-height: 0; padding: 2px 0; }
 
 /* --- controls: text, rules, one slider --- */
-.panel-body { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 12px; }
-.panel-label { margin: 0; font-size: 12px; color: var(--dim); }
+.panel-body { padding: 4px 0 14px; display: flex; flex-direction: column; }
 
-.verb-tabs { display: flex; gap: 18px; overflow-x: auto; scrollbar-width: none; }
-.verb-tabs::-webkit-scrollbar { display: none; }
-.verb-tab { flex: 0 0 auto; color: var(--dim); padding: 4px 0; }
-.verb-tab.is-active { color: var(--ink); }
+/* One row per verb: its name in the margin, its options after. */
+.verb-row { display: flex; flex-direction: column; gap: 4px; padding: 6px 16px; }
+.verb-line { display: flex; align-items: baseline; gap: 14px; min-width: 0; }
+.verb-label { flex: 0 0 64px; color: var(--dim); font-size: 13px; }
+.verb-line > .chips, .verb-line > .row, .verb-line > .match-row { flex: 1 1 auto; min-width: 0; }
+.verb-line > .slider { flex: 1 1 auto; }
+.verb-line .slider span:empty { display: none; }
+.verb-row > .slider { margin-left: 78px; }
 
-.chips { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.chips { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 18px; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; }
 .chip { color: var(--dim); padding: 6px 0; min-height: 32px; }
 .chip.is-active { color: var(--ink); text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
 
@@ -238,10 +229,12 @@ button { appearance: none; background: none; border: 0; padding: 0; cursor: poin
 .layer-actions {
   display: flex;
   gap: 18px;
+  margin: 6px 16px 0;
   padding-top: 10px;
   border-top: 1px solid var(--rule);
 }
 .layer-actions .pill { color: var(--dim); }
+.layer-actions .pill-tray { margin-left: auto; color: var(--ink); }
 
 .swatches { display: flex; gap: 10px; flex-wrap: wrap; }
 .swatch {
@@ -252,7 +245,7 @@ button { appearance: none; background: none; border: 0; padding: 0; cursor: poin
 }
 .swatch.is-active { outline: 1px solid var(--ink); outline-offset: 3px; }
 
-.match-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.match-row { display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
 .match {
   flex: 0 0 auto;
   width: 56px;
