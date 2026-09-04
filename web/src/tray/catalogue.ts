@@ -11,7 +11,7 @@
  */
 import type { ThemeId } from '@collage/shared/constants';
 import { api, type TrayItem } from '../lib/api.ts';
-import { localTray, localVariants } from './local.ts';
+import { localTray, localVariants, localFragmentUrl } from './local.ts';
 
 let staticManifest: Record<string, TrayItem[]> | null = null;
 
@@ -34,8 +34,11 @@ export async function loadTray(theme: ThemeId, generation = 0): Promise<TrayItem
   try {
     const { items } = await api.tray(theme, generation);
     if (items?.length) {
-      cache.set(key, items);
-      return items;
+      // Generated items are drawn on the device from their ids, so the tray
+      // can never disagree with the canvas and makes no request per tile.
+      const local = items.map((i) => (i.source === 'generated' ? { ...i, thumb: localFragmentUrl(i.id) ?? i.thumb } : i));
+      cache.set(key, local);
+      return local;
     }
   } catch {
     // Fall through to the bundled tray.
