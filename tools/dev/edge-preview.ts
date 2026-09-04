@@ -1,15 +1,16 @@
 /** Dev-only: a contact sheet of every edge style at three roughnesses. */
-import { writeFileSync, readFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { launch } from './browser.ts';
 import { rasterise } from './raster.ts';
 import { encodePng } from './png.ts';
 import { applyEdge } from '../../web/src/verbs/edge.ts';
 import { EDGE_STYLES } from '../../shared/src/constants.ts';
+import { generateFragment } from '../../shared/src/fragments.ts';
 
 const SP = process.env['SP'] ?? '.';
 const CELL = 300;
-const frag = process.argv[2] ?? 'herbarium.leaf.0';
-const svg = readFileSync(`web/public/fragments/${frag.split('.')[0]}/${frag}.svg`, 'utf8');
+const frag = process.argv[2] ?? 'tee.0';
+const svg = generateFragment(frag).svg;
 
 const browser = await launch();
 const src = await rasterise(browser, svg, CELL, CELL);

@@ -1,10 +1,20 @@
-# Collage — PRD v0.1
+# Collage — PRD v0.2
 **Working title. Sky Valley · September 2026**
-*A mobile-web collage tool with a generated tray and AI manipulation verbs. Craft output, no account required, and every piece exported as an addressable version rather than a flat image.*
+*A mobile-web collage tool in the Polyvore mould: a tray of fashion cutouts, a white canvas, no account required, and every piece exported as an addressable version rather than a flat image.*
+
+> **v0.2 — what changed from v0.1, and why.** The first build was made
+> against v0.1 and then used. Three things did not survive contact: the
+> archive-sourced tray (botanical plates, maps, type specimens) made the
+> product read as a museum-department exercise rather than something you'd
+> make about a person; the paper substrate read as noise on a phone; and the
+> six-verb editor was three menus deep. v0.2 corrects the document to the
+> product that exists: Polyvore's model — a tray of fashion items, a clean
+> white canvas, one edge control — with the data contract and the artifact
+> unchanged. Sections that changed are marked *(v0.2)*.
 ---
 ## 1. Summary
 A single-page web app. Two entry points, deliberately different: people who come to the site get an empty canvas and a loaded tray; people who arrive on someone's link get that person's finished piece with the controls live. No signup, no install.
-The tray is generated and archive-sourced rather than retailer-fed. The AI does the mechanical work — cutting, masking, material, relighting, extension — and none of the compositional work. Output is 4:5, plus a 9:16 story variant and a process replay.
+The tray is Polyvore's: fashion items — tops, bottoms, dresses, outerwear, shoes, bags, accessories, beauty — as cutouts on white, plus the maker's own photos, cut out on import. *(v0.2)* It is generated rather than retailer-fed: authored fashion flats from seeds, not product feeds, so there are no rights, no dead SKUs and no merchant. The AI does the mechanical work — cutting out a photo, re-cutting an edge — and none of the compositional work. Output is 4:5, plus a 9:16 story variant and a process replay.
 Riffing mechanics are out of scope; they're being built separately. This PRD's obligation to that work is a **data contract**: every piece is persisted as a parameterised version with a parent field, so the riff layer can attach without a rewrite.
 ---
 ## 2. Goals
@@ -64,30 +74,29 @@ Link arrival writes `parent_id`; cold arrival writes null. That is the only diff
 Auto-save to device-scoped anonymous session from the first action. Nothing is ever lost, and "claim this" acts on an object that already exists.
 ---
 ## 8. Features
-### 8.1 Canvas
+### 8.1 Canvas *(v0.2)*
 - Fixed 4:5, 1080 × 1350 render target
-- Occupies ~65% of viewport; tray and controls persistent below, no modal editing
+- As large as 4:5 permits, full-bleed on a phone (≈56% of viewport height on a 390 × 844 screen — a fixed 4:5 frame cannot reach 65% without cropping or covering it); tray and controls persistent below, no modal editing
 - Layer cap: 20 fragments (hard). Forces composition, keeps replay watchable, bounds render cost
-- Substrate layer: paper stock, colour, texture — a first-class choice, not a background afterthought
-### 8.2 Tray
-Two sources, both free of gatekeepers:
-- **Generated.** Prompt-free. Tray is populated by theme (selected or inherited from the landing piece), items generated as pre-cut transparent PNGs
-- **Archive.** Open-access collections — Rijksmuseum, the Met, NYPL, Biodiversity Heritage Library, Internet Archive. Botanical plates, maps, satellite imagery, ephemera, type specimens
+- A clean white sheet. There is no paper stock, colour or texture control — the v0.1 substrate read as noise on a phone and competed with the pieces. The version record still carries a substrate so a piece *can* have one; the editor does not offer it.
+### 8.2 Tray *(v0.2)*
+Polyvore's tray, without Polyvore's retailers. Two sources, both free of gatekeepers:
+- **Generated fashion flats.** Prompt-free. Tops, bottoms, dresses, outerwear, shoes, bags, accessories, beauty — authored garment and item illustrations produced from seeds, in one wardrobe palette, with textile patterns. Every item is reproducible from its id, on the server or in the browser, so the tray is cacheable, pre-warmable and works offline.
+- **The maker's own photos.** The photo picker is the Clipper: an image comes in with its background cut away and lands as a piece. This is how real products, and real people's things, enter a piece.
 Rules:
-- Tray is themed and finite per session (target 40–80 items visible). Not a search box. Browsing a curated tray is the creative act; searching a million SKUs is a chore
-- One "more like this" action per item, generating variants of a chosen fragment
-- User upload allowed (photo picker), auto-cut on import
-### 8.3 Verbs
-The set exists to remove mechanical work and add manipulations unavailable with knife and glue. Each is a tap or a slider. No prompt field in v1.
-| Verb | What it does |
-|---|---|
-| **Edge** | Torn / cut / burnt / deckle / scissor / clean, with a roughness slider |
-| **Material** | Re-render fragment as newsprint, riso, halftone, photocopy, textile, satellite tile — shape preserved |
-| **Cut** | Semantic cut ("along the coastline", "just the sleeve") — no path drawing |
-| **Extend** | Outpaint a fragment past its own edge |
-| **Relight** | Match one fragment's light to another's |
-| **Palette** | Apply a palette across all fragments at once |
-**Edge is the highest-priority verb.** In the reference collage the torn white edges are where the entire craft signal lives, and no tool ships edge treatment as a first-class parameter. If one thing differentiates the output visually, it's this.
+- The landing tray is *All* — every family mixed, the way a real tray is. Categories (Polyvore's eight) filter it. Not a search box.
+- Target 40–80 items visible. One "more like this" action per item, generating variants of a chosen fragment
+- The open-access archive adapter from v0.1 remains in the code, off by default. It is no longer the product.
+### 8.3 Verbs *(v0.2)*
+The editor offers two. Polyvore offered none of this beyond a few photo filters, and the v0.1 set of six was three menus deep; what remains is the one verb with a craft argument, and the one that ties a piece together.
+| Verb | Where | What it does |
+|---|---|---|
+| **Edge** | On the selected piece | Clean / cut / torn / scissor / deckle / burnt, with a roughness slider |
+| **Palette** | Under the tray | Apply a palette across all pieces at once |
+
+**Edge is the highest-priority verb.** The torn white edge is where the craft signal lives, and no tool ships edge treatment as a first-class parameter. If one thing differentiates the output visually, it's this.
+
+Four more are implemented, stored as parameters, and render on any piece that carries them, but are not offered in the editor: **Material** (newsprint, riso, halftone, photocopy, textile, satellite), **Cut** (region and semantic), **Extend** and **Relight**. Material is a style rather than a signal. The other three are the v0.1 "after" tier and, without a model behind them, read as more rows of controls rather than as the semantic tools they were specified as. They return when a provider does.
 ### 8.4 Accounts
 - Anonymous: create, export, share, and persist to device — permanently, not first-use only
 - Signed in: reaction notifications, cross-device library
@@ -122,7 +131,7 @@ If those hold, the riff layer attaches by reading versions and writing children.
 **Cost.** Anonymous plus generative means every session spends money with no identity to bill or throttle. Required in v1: per-session and per-IP generation caps, device fingerprinting, aggressive caching of generated tray assets (trays are themed and finite — cache hit rate should be high), pre-warmed tray pools rather than on-demand generation per user.
 **Abuse.** Anonymous AI image generation is the exact exposure that ended Shapes on Discord. In the first build, not later: input and output content filtering, no likeness generation of real people, no user-uploaded faces into generative verbs, abuse reporting on every shared URL, takedown path. Treat platform-policy-shaped constraints as design inputs even though we're on our own domain, because our distribution runs through platforms that have them.
 **Performance.** Interactive on a mid-range phone. Canvas manipulation at 60fps. Verb latency under 3s with an optimistic placeholder. Replay renders client-side where possible.
-**Rights.** Generated and open-access only. No retailer imagery, no affiliate feeds. This is a deliberate rejection of the Polyvore model: no merchant approvals, no dead SKUs, no licence argument, and no revenue.
+**Rights.** Generated and user-supplied only. No retailer imagery, no affiliate feeds. This keeps Polyvore's editor and rejects Polyvore's supply chain: no merchant approvals, no dead SKUs, no licence argument, and no revenue. *(v0.2: the open-access archive is no longer a source.)*
 ---
 ## 11. Metrics
 Primary, in order:
@@ -135,15 +144,15 @@ Primary, in order:
 Instrumented but not optimised: layer count, verb usage distribution, tray source mix, cost per completed piece.
 ---
 ## 12. Milestones
-**M0 — Canvas.** Fixed 4:5, layer manipulation, static hand-made tray of ~60 cut assets, one theme, cold-arrival entry only. No AI, no link arrival, no accounts. Proves the composing surface is usable on a phone and that an empty canvas plus a loaded tray gets people to a finished piece. *Ship to ~20 people.*
-**M1 — Verbs.** Edge and material first. Semantic cut, extend, relight after. Generated tray pools with caching.
-**M2 — Artifact.** Three exports, permanent URLs, OG cards, share sheet, replay. **The replay lands here, not later** — without it we can't read metric 3, which is the one that tells us whether these get posted at all.
-**M3 — Persistence.** Anonymous session save, claim flow, reaction notifications.
-M1 and M2 can partly run in parallel. M2 does not wait on the full verb set.
+**M0 — Canvas.** *Done.* Fixed 4:5, layer manipulation on touch and with a mouse, a 60-item tray per category, cold-arrival entry.
+**M1 — Verbs.** *Done, then pruned (v0.2).* All six implemented; the editor offers edge and palette. Generated tray pools with caching.
+**M2 — Artifact.** *Done.* Three exports, permanent URLs, OG cards, share sheet, replay.
+**M3 — Persistence.** *Done except delivery.* Anonymous session save and the claim flow work; reaction notifications need a mail provider.
+**M4 — Tray *(v0.2)*.** The fashion tray. Authored flats first; a photo-based item source when a rights-clean one exists.
 ---
 ## 13. Open questions
 1. **Does the replay actually get shared?** The whole effort-signal argument rests on it and it's untested. Cheapest possible test: hand-make five replays, post them, see if anyone asks how.
-2. **Themed tray vs. search.** Curation is the argument, but a themed tray may fail the "this is so you" motive — you can't make something about your friend if the tray is all botanical plates. Possible answer is upload plus generated tray, which needs testing.
+2. **Themed tray vs. search.** *Partly answered (v0.2):* the archive themes failed exactly this way — nobody makes something about a person out of botanical plates. Polyvore's categories plus the maker's own photos is the answer being tested now. Whether it still wants search is open.
 3. **Where does the addressed version come from?** Nothing in v1 makes a piece *for* a named person, and that motive is the strongest in the underlying thesis. Deferred with the riff layer, but the data model should not preclude a recipient field.
 4. **Craft vs. party.** This PRD is the craft product. The party version — timed, multiplayer, degradation-as-mechanic — is a different build with a different architecture and a natural home on Discord. Choosing craft here is a real choice, not a default.
 5. **Cost per completed piece** is unknown until M1 and could invalidate the anonymous-forever position.

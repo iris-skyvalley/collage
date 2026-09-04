@@ -1,11 +1,11 @@
 /**
- * Emits the static tray (PRD §12, M0: "static hand-made tray of ~60 cut
- * assets") to web/public/fragments/, plus a manifest the client loads at boot.
+ * Emits the static tray to web/public/fragments/, plus a manifest the client
+ * loads at boot.
  *
  * The same generators back the server's pre-warmed pools, so this script is a
  * build-time cache of work the server would otherwise repeat.
  */
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { THEMES, TRAY_TARGET, type ThemeId } from '../shared/src/constants.ts';
@@ -31,14 +31,16 @@ let count = 0;
 
 for (const theme of THEMES) {
   const specs: FragmentSpec[] = generateTray(theme.id, PER_THEME);
-  mkdirSync(join(outDir, theme.id), { recursive: true });
   manifest[theme.id] = specs.map((s) => {
+    // Files live under their category; "all" points into the categories.
+    const dir = join(outDir, s.theme);
+    mkdirSync(dir, { recursive: true });
     const file = `${s.id}.svg`;
-    writeFileSync(join(outDir, theme.id, file), s.svg);
-    count++;
+    const path = join(dir, file);
+    if (!existsSync(path)) { writeFileSync(path, s.svg); count++; }
     return {
       id: s.id, theme: s.theme, family: s.family, name: s.name,
-      w: s.w, h: s.h, uri: `/fragments/${theme.id}/${file}`,
+      w: s.w, h: s.h, uri: `/fragments/${s.theme}/${file}`,
     };
   });
 }

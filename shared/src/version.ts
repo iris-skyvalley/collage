@@ -116,7 +116,7 @@ export const DEFAULT_SUBSTRATE: Substrate = {
   texture: 'smooth',
 };
 
-export function emptyComposition(theme: ThemeId = 'herbarium'): Composition {
+export function emptyComposition(theme: ThemeId = 'all'): Composition {
   return {
     theme,
     substrate: { ...DEFAULT_SUBSTRATE },

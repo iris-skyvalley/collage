@@ -51,7 +51,7 @@ console.log('verbs on canvas:', await page.evaluate(() => {
 }));
 
 await page.keyboard.press('Escape');
-await page.locator('.palette-row .chip', { hasText: 'Foxed' }).click();
+await page.locator('.palette-row .chip', { hasText: 'Sepia' }).click();
 await page.waitForTimeout(1200);
 await page.screenshot({ path: `${SP}/editor.png` });
 

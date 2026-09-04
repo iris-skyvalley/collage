@@ -1,7 +1,7 @@
 # collage
 
-A mobile-web collage tool with a generated tray and AI manipulation verbs.
-Craft output, no account required, and every piece exported as an addressable
+A mobile-web collage tool in the Polyvore mould: a tray of fashion cutouts, a
+white canvas, no account required, and every piece exported as an addressable
 version rather than a flat image.
 
 The product specification is [`docs/PRD.md`](docs/PRD.md). This README covers
@@ -35,8 +35,9 @@ npm run typecheck
 
 ## How it is laid out
 
-One canvas, one dock beneath it, no tabs. The dock shows the tray — themes,
-a grid of cutouts, the palette — when nothing is selected, and the selected
+One canvas, one dock beneath it, no tabs. The dock shows the tray — Polyvore's
+categories, a grid of cutouts with *your photo* first, the palette — when
+nothing is selected, and the selected
 piece's controls when something is: the ways its edge can be cut (clean, cut,
 torn, scissor, deckle, burnt), roughness, and a line of actions (front, back,
 flip, back to the tray). Removing a piece is on the piece
@@ -63,9 +64,12 @@ Three things carry most of the weight:
 
 - **`shared/src/version.ts`** — the record every piece is saved as, with the
   PRD §9 non-negotiables enforced in code rather than by convention.
+- **`shared/src/fragments.ts`** — the tray: fashion flats (tops, bottoms,
+  dresses, outerwear, shoes, bags, accessories, beauty) authored as seeded
+  vector cutouts, reproducible from their ids on the server or in the browser.
 - **`web/src/render/renderer.ts`** — the single renderer used by the editor,
   the 1080 × 1350 piece, the 9:16 story and every replay frame.
-- **`web/src/verbs/edge.ts`** — the highest-priority verb, and the one that
+- **`web/src/verbs/edge.ts`** — the one verb in the editor, and the one that
   decides whether the output looks made or generated.
 
 ## Deploying
@@ -74,7 +78,7 @@ The app has two halves, and the halves have different needs.
 
 **The client** (`dist/web`) is static and stands on its own. Everything a
 maker does — the tray, the verbs, the replay, saving the still and the story —
-runs on the device. Generated fragments are produced from their ids in the
+runs on the device. Generated items are produced from their ids in the
 browser, so the tray needs no server. What a static deploy cannot do is mint
 permanent links, receive uploads for sharing, or serve link arrivals: those
 are the server's job, and the export sheet says so in that case.
@@ -101,7 +105,7 @@ Everything has a working default; nothing below is required to run.
 |---|---|---|
 | `PORT` | `8787` | Server port |
 | `DATABASE_FILE` | `data/collage.db` | SQLite file; `:memory:` for tests |
-| `TRAY_SIZE` | `60` | Fragments per themed tray (PRD targets 40–80) |
+| `TRAY_SIZE` | `60` | Items per category tray (PRD targets 40–80) |
 | `ARCHIVE_ENABLED` | unset | `1` adds open-access archive items to the tray |
 | `NODE_ENV` | unset | `production` stops the claim route returning its own link |
 
@@ -109,11 +113,8 @@ Everything has a working default; nothing below is required to run.
 
 Against PRD §12:
 
-- **M0 — Canvas.** Complete. Fixed 4:5, layer manipulation, a 60-asset tray per
-  theme, cold-arrival entry. The canvas is a clean white sheet; §8.1's
-  substrate (stock, colour, texture) stays in the version record so a piece
-  can carry one, but the editor does not offer it — a product decision taken
-  after seeing it on a phone, where paper texture read as noise.
+- **M0 — Canvas.** Complete. Fixed 4:5, layer manipulation, a 60-item tray per
+  category, cold-arrival entry. The canvas is a clean white sheet.
 
   One spec conflict, resolved rather than fudged: §8.1 asks for a canvas
   occupying ~65% of the viewport, and also for a fixed 4:5 frame with the

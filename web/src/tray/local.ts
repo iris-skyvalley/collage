@@ -12,7 +12,7 @@ import type { ThemeId } from '@collage/shared/constants';
 import { generateFragment, generateTray, variantsOf, type FragmentSpec } from '@collage/shared/fragments';
 import type { TrayItem } from '../lib/api.ts';
 
-const GENERATED_ID = /^[a-z]+\.[a-z]+\.\d+$/;
+const GENERATED_ID = /^[a-z]+\.\d+$/;
 const urls = new Map<string, string>();
 
 export const isGeneratedId = (id: string): boolean => GENERATED_ID.test(id);

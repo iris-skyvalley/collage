@@ -45,13 +45,18 @@ const met: Collection = {
   id: 'met',
   name: 'The Metropolitan Museum of Art',
   licence: 'CC0',
+  // The Costume Institute is public domain and photographed on neutral
+  // grounds — the nearest thing to a rights-clean product shot that exists.
   queries: {
-    herbarium: 'botanical',
-    cartography: 'map',
-    ephemera: 'ephemera',
-    typography: 'type specimen',
-    cosmos: 'celestial',
-    marginalia: 'manuscript',
+    all: 'costume institute',
+    tops: 'blouse',
+    bottoms: 'skirt',
+    dresses: 'evening dress',
+    outerwear: 'coat',
+    shoes: 'shoes',
+    bags: 'handbag',
+    accessories: 'hat',
+    beauty: 'perfume bottle',
   },
   async search(query, signal, theme) {
     const base = 'https://collectionapi.metmuseum.org/public/collection/v1';

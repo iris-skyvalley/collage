@@ -49,7 +49,7 @@ await page.screenshot({ path: `${SP}/03-torn-edge.png` });
 
 // Paper + palette, document-level.
 await page.keyboard.press('Escape');
-await page.locator('.palette-row .chip', { hasText: 'Cyanotype' }).click();
+await page.locator('.palette-row .chip', { hasText: 'Denim' }).click();
 await page.waitForTimeout(1200);
 await page.screenshot({ path: `${SP}/05-paper-palette.png` });
 

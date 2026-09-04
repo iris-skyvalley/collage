@@ -45,7 +45,7 @@ function composition(over: Partial<Composition> = {}): Composition {
     ...emptyComposition(),
     layers: [{
       id: 'a1',
-      fragment_ref: { source: 'generated', id: 'herbarium.leaf.0', uri: '/api/fragment/herbarium.leaf.0.svg', w: 512, h: 512 },
+      fragment_ref: { source: 'generated', id: 'tee.0', uri: '/api/fragment/tee.0.svg', w: 512, h: 512 },
       transform: { x: 400, y: 500, scale: 0.8, rotation: 0.1, z: 0 },
       verbs: [{ verb: 'edge', params: { style: 'torn', roughness: 0.6 } }],
       placed_at_ms: 900,
@@ -173,10 +173,10 @@ describe('renders', () => {
 
 describe('the tray', () => {
   test('is themed, finite and within the PRD’s range', async () => {
-    const res = await get('/api/tray?theme=herbarium');
+    const res = await get('/api/tray?theme=shoes');
     const { items } = (await res.json()) as { items: { id: string; theme: string }[] };
     assert.ok(items.length >= 40 && items.length <= 80, `tray of ${items.length} is outside 40–80`);
-    assert.ok(items.every((i) => i.theme === 'herbarium'));
+    assert.ok(items.every((i) => i.theme === 'shoes'));
   });
 
   test('an unknown theme is refused rather than served empty', async () => {
@@ -184,11 +184,11 @@ describe('the tray', () => {
   });
 
   test('fragments are immutable and derivable from their id alone', async () => {
-    const res = await fetch(`${base}/api/fragment/cosmos.planet.3.svg`);
+    const res = await fetch(`${base}/api/fragment/sneaker.3.svg`);
     assert.equal(res.status, 200);
     assert.match(res.headers.get('cache-control') ?? '', /immutable/);
     const a = await res.text();
-    const b = await (await fetch(`${base}/api/fragment/cosmos.planet.3.svg`)).text();
+    const b = await (await fetch(`${base}/api/fragment/sneaker.3.svg`)).text();
     assert.equal(a, b, 'the same id must always yield the same art, or nothing caches');
   });
 });
@@ -198,7 +198,7 @@ describe('caps', () => {
     const session = 'cap-test-session-1';
     let last: Response | undefined;
     for (let i = 0; i <= CAPS.generationsPerSessionPerDay; i++) {
-      last = await get(`/api/tray/variants?id=herbarium.leaf.0&salt=${i}`, session);
+      last = await get(`/api/tray/variants?id=tee.0&salt=${i}`, session);
       if (last.status === 429) break;
     }
     assert.equal(last!.status, 429);
@@ -207,7 +207,7 @@ describe('caps', () => {
   });
 
   test('a session that has not spent anything is unaffected', async () => {
-    const res = await get('/api/tray/variants?id=herbarium.leaf.1&salt=1', 'fresh-session-2');
+    const res = await get('/api/tray/variants?id=tee.1&salt=1', 'fresh-session-2');
     assert.equal(res.status, 200);
     const { items } = (await res.json()) as { items: unknown[] };
     assert.equal(items.length, 4);

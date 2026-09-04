@@ -103,8 +103,16 @@ one, rather than stubbed and discovered later. PRD §13 Q5 asks what a completed
 piece costs; that question is only answerable if the cost path is real.
 
 Every fragment is a deterministic function of its id, so a tray is cacheable,
-pre-warmable, and regenerable byte-identically after any eviction. This is most
-of what makes an anonymous generative product affordable at all.
+pre-warmable, and regenerable byte-identically after any eviction — on the
+server or in the browser. This is most of what makes an anonymous generative
+product affordable at all.
+
+The fragments themselves are fashion flats (`shared/src/fragments.ts`):
+thirty-six garment and item families across Polyvore's eight categories,
+drawn as outlined vector cutouts with a shared wardrobe palette and textile
+patterns. They are flats rather than photographs because there is no
+rights-clean product-photo feed; real products enter through the photo
+picker, which cuts them out on import.
 
 ## The two entry points
 

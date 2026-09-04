@@ -29,13 +29,18 @@ export const MAX_LAYERS = 20;
 /** PRD §8.2 — a tray is themed and finite. Not a search box. */
 export const TRAY_TARGET = { min: 40, max: 80 } as const;
 
+/** Polyvore's categories. "All" is the landing: a tray drawn across every
+ *  family, the way a real tray of pieces is mixed. */
 export const THEMES = [
-  { id: 'herbarium', name: 'Herbarium', blurb: 'Pressed plants, plates, specimen tags' },
-  { id: 'cartography', name: 'Cartography', blurb: 'Coastlines, contours, compass roses' },
-  { id: 'ephemera', name: 'Ephemera', blurb: 'Tickets, stamps, tape, torn pages' },
-  { id: 'typography', name: 'Type Specimen', blurb: 'Letterforms, rules, wood type' },
-  { id: 'cosmos', name: 'Cosmos', blurb: 'Planets, orbits, satellite tiles' },
-  { id: 'marginalia', name: 'Marginalia', blurb: 'Hands, arrows, blots, ribbons' },
+  { id: 'all', name: 'All', blurb: 'Everything, mixed' },
+  { id: 'tops', name: 'Tops', blurb: 'Tees, blouses, knits' },
+  { id: 'bottoms', name: 'Bottoms', blurb: 'Trousers, skirts, shorts' },
+  { id: 'dresses', name: 'Dresses', blurb: 'Shift, slip, wrap' },
+  { id: 'outerwear', name: 'Outerwear', blurb: 'Coats and jackets' },
+  { id: 'shoes', name: 'Shoes', blurb: 'Sneakers, heels, boots' },
+  { id: 'bags', name: 'Bags', blurb: 'Totes, crossbodies, clutches' },
+  { id: 'accessories', name: 'Accessories', blurb: 'Glasses, hats, jewellery' },
+  { id: 'beauty', name: 'Beauty', blurb: 'Lipstick, scent, polish' },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]['id'];
@@ -74,12 +79,12 @@ export type Material = (typeof MATERIALS)[number];
  *  the document rather than on a layer. */
 export const PALETTES = [
   { id: 'none', name: 'As found', ramp: [] as string[] },
-  { id: 'foxed', name: 'Foxed', ramp: ['#2b2118', '#7a5b3d', '#c39b6f', '#e8d5b7', '#faf3e6'] },
-  { id: 'riso-duo', name: 'Riso duo', ramp: ['#1c1b3a', '#3b3ba0', '#e8437d', '#ffa3c0', '#fff4e6'] },
-  { id: 'botanic', name: 'Botanic', ramp: ['#1d2b1f', '#3f5d3a', '#7d9a63', '#c2cf9b', '#f2f0e0'] },
-  { id: 'cyanotype', name: 'Cyanotype', ramp: ['#08161f', '#123a5c', '#2f7ba8', '#8fc4d9', '#e7f2f5'] },
-  { id: 'ashfall', name: 'Ashfall', ramp: ['#141414', '#3d3d3f', '#77777a', '#b6b6b8', '#efeeea'] },
-  { id: 'orchard', name: 'Orchard', ramp: ['#2a1206', '#8c2f0d', '#d9701e', '#f0b95c', '#fdf1d8'] },
+  { id: 'foxed', name: 'Sepia', ramp: ['#2b2118', '#7a5b3d', '#c39b6f', '#e8d5b7', '#faf3e6'] },
+  { id: 'riso-duo', name: 'Pop', ramp: ['#1c1b3a', '#3b3ba0', '#e8437d', '#ffa3c0', '#fff4e6'] },
+  { id: 'botanic', name: 'Olive', ramp: ['#1d2b1f', '#3f5d3a', '#7d9a63', '#c2cf9b', '#f2f0e0'] },
+  { id: 'cyanotype', name: 'Denim', ramp: ['#08161f', '#123a5c', '#2f7ba8', '#8fc4d9', '#e7f2f5'] },
+  { id: 'ashfall', name: 'Mono', ramp: ['#141414', '#3d3d3f', '#77777a', '#b6b6b8', '#efeeea'] },
+  { id: 'orchard', name: 'Rust', ramp: ['#2a1206', '#8c2f0d', '#d9701e', '#f0b95c', '#fdf1d8'] },
 ] as const;
 export type PaletteId = (typeof PALETTES)[number]['id'];
 

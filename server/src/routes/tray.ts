@@ -32,7 +32,7 @@ trayRouter.get('/tray', asyncRoute(async (req, res) => {
 trayRouter.get('/tray/variants', asyncRoute(async (req, res) => {
   const ctx = context(req);
   const id = String(req.query['id'] ?? '');
-  if (!/^[a-z]+\.[a-z]+\.\d+$/.test(id)) return fail(res, 400, 'Unknown fragment.');
+  if (!/^[a-z]+\.\d+$/.test(id)) return fail(res, 400, 'Unknown fragment.');
 
   const perSession = consume(`gen:s:${ctx.session ?? ctx.ip}`, { max: CAPS.generationsPerSessionPerDay, windowMs: DAY });
   if (!perSession.ok) {

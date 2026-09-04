@@ -13,7 +13,7 @@ import { MAX_LAYERS } from '../shared/src/constants.ts';
 
 const layer = (over: Partial<Layer> = {}): Layer => ({
   id: 'l1',
-  fragment_ref: { source: 'generated', id: 'herbarium.leaf.0', w: 512, h: 512 },
+  fragment_ref: { source: 'generated', id: 'tee.0', w: 512, h: 512 },
   transform: { x: 10, y: 20, scale: 1, rotation: 0, z: 0 },
   verbs: [],
   ...over,
@@ -24,7 +24,7 @@ const version = (over: Partial<Version> = {}): Version => ({
   parent_id: null,
   root_id: 'v1',
   created_by: 'sess',
-  theme: 'herbarium',
+  theme: 'all',
   substrate: { stock: 'cartridge', colour: '#efe7d7', texture: 'grain' },
   palette: 'none',
   layers: [layer()],
@@ -132,7 +132,7 @@ describe('layer order and timing are retained', () => {
 describe('a version is reconstructable from its record alone', () => {
   test('parse is a fixed point — nothing is lost or invented', () => {
     const c = {
-      ...emptyComposition('cosmos'),
+      ...emptyComposition('bags'),
       palette: 'cyanotype',
       substrate: { stock: 'kraft', colour: '#e6dcc4', texture: 'foxed' },
       layers: [

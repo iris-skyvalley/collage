@@ -1,21 +1,18 @@
-import type { ThemeId } from './constants.ts';
+/**
+ * A wardrobe's colours. One pool rather than one per category, so a tray
+ * drawn across categories still reads as one season.
+ */
+export const INK = '#26262a';
 
-/** Ink sets per theme. Index 0 is the darkest line colour, last is nearest paper. */
-export const THEME_INKS: Record<ThemeId, string[]> = {
-  herbarium: ['#2a2a1e', '#4b5d3a', '#7d8f52', '#a8a06a', '#c8b38a', '#8c3b2b'],
-  cartography: ['#1d2733', '#2f5d75', '#5f8ea3', '#a9c2c9', '#c8a24a', '#8e3f2f'],
-  ephemera: ['#241f1b', '#7a3b2e', '#b8642f', '#cbb08a', '#4d5f6b', '#a8324a'],
-  typography: ['#141414', '#2e2e2e', '#5a5a5a', '#8f8a80', '#c0392b', '#b8ac96'],
-  cosmos: ['#0c1020', '#1f3357', '#4a6fa5', '#8fa8cc', '#d9c27a', '#a8536b'],
-  marginalia: ['#1b1b1b', '#3a3226', '#6b5b45', '#9b8b70', '#8c2f2f', '#3d5a6b'],
-};
+/** Weighted: neutrals appear more, the way they do in a wardrobe. */
+export const WARDROBE: string[] = [
+  '#1c1c1e', '#1c1c1e', '#f6f3ec', '#f6f3ec', '#ece4d2', '#c6a27a', '#9d9a94', '#5a5754',
+  '#1f2a44', '#3f5f85', '#6f8fae', '#b5342a', '#6b7048', '#e5b3a6', '#2c4fa3', '#2f5d3a',
+  '#d3a53a', '#5a3e2b', '#8c6b4f', '#d9d2c4', '#7a4b6e',
+];
 
-/** The tint the fragment's own paper takes, before any substrate sits behind it. */
-export const THEME_PAPER: Record<ThemeId, string[]> = {
-  herbarium: ['#f2ecdc', '#e8dfc7', '#efe9d8'],
-  cartography: ['#f0ece0', '#e6e8e2', '#f4f1e6'],
-  ephemera: ['#f3e8d6', '#eadcc4', '#f6efe2'],
-  typography: ['#f6f4ef', '#ece9e1', '#fbfaf6'],
-  cosmos: ['#e9e6ea', '#dfe0e8', '#f2f0f2'],
-  marginalia: ['#f4efe3', '#eae3d3', '#f8f4ea'],
-};
+/** Metals and small hardware. */
+export const METALS = ['#c9a24d', '#d8d3c8', '#b08d57'];
+
+/** Leather and suede, for shoes and bags. */
+export const LEATHERS = ['#1c1c1e', '#3b2a1f', '#8c6b4f', '#c6a27a', '#f6f3ec', '#b5342a', '#1f2a44', '#6b7048'];

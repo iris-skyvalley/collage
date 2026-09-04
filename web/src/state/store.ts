@@ -6,7 +6,7 @@
  * there is no translation step between what the editor holds and what the riff
  * layer will one day read.
  */
-import { MAX_LAYERS, PALETTES, PIECE, type EntryPath, type PaletteId, type ThemeId } from '@collage/shared/constants';
+import { MAX_LAYERS, PALETTES, PIECE, isThemeId, type EntryPath, type PaletteId, type ThemeId } from '@collage/shared/constants';
 import { emptyComposition, type AppliedVerb, type Composition, type FragmentRef, type Layer, type VerbName } from '@collage/shared/version';
 import { shortId } from '@collage/shared/id';
 
@@ -242,6 +242,10 @@ export class Store {
       if (!raw) return null;
       const parsed = JSON.parse(raw) as { comp?: Composition; sourceVersionId?: string | null; savedVersionId?: string | null; entry?: EntryPath };
       if (!parsed.comp?.layers) return null;
+      // A draft made against a tray this build no longer has (an old theme, or
+      // old-shaped fragment ids) would restore as blanks; start clean instead.
+      if (!isThemeId(parsed.comp.theme)) return null;
+      if (parsed.comp.layers.some((l) => l.fragment_ref.source === 'generated' && !/^[a-z]+\.\d+$/.test(l.fragment_ref.id))) return null;
       return {
         comp: parsed.comp,
         sourceVersionId: parsed.sourceVersionId ?? null,

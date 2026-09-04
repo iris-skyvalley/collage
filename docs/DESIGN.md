@@ -23,7 +23,10 @@ sources are listed below.)
   belongs to a fragment or the paper. The interface is `#141414`, `#8b8a85`,
   and two hairline greys.
 - **The grid of cutouts.** White tiles, hairline borders, 2px radius, the
-  fragment centred. Two rows that scroll sideways. This is the tray, and the
+  item centred. Two rows that scroll sideways, *your photo* first, Polyvore's
+  categories above. The items are fashion flats — outlined garments and
+  accessories — rather than product photos, because there is no rights-clean
+  feed of those; photos come in through the picker. This is the tray, and the
   tray is the product.
 - **Text, not chrome.** Verbs, styles and layer actions are plain words; the
   active one is dark and, where a row needs it, underlined. There are no
