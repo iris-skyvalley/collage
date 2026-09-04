@@ -22,6 +22,8 @@ import {
   type SubstrateTexture, type ThemeId, type VerbName,
 } from './constants.ts';
 
+export type { VerbName, EdgeStyle, Material, PaletteId, SubstrateStockId, SubstrateTexture, ThemeId } from './constants.ts';
+
 /** Where a fragment came from. The ref is stable and resolvable; the pixels
  *  it names are never copied into the version record. */
 export type FragmentSource = 'generated' | 'archive' | 'upload';
