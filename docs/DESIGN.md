@@ -29,7 +29,7 @@ sources are listed below.)
   active one is dark and, where a row needs it, underlined. There are no
   chips, pills, or boxes around options.
 - **One level.** There are no tabs. The dock shows the tray when nothing is
-  selected and the piece's two rows — edge, material — when something is.
+  selected and the piece's one row — edge — when something is.
   Polyvore's editor had the same shape: the item panel was simply there, and
   the tools for a selected item appeared when you selected one.
 - **The selection.** A hairline rectangle with four square corner handles,

@@ -47,11 +47,6 @@ await page.locator('.chip', { hasText: 'Torn' }).click();
 await page.waitForTimeout(900);
 await page.screenshot({ path: `${SP}/03-torn-edge.png` });
 
-// Material.
-await page.locator('.chip', { hasText: 'Riso' }).click();
-await page.waitForTimeout(900);
-await page.screenshot({ path: `${SP}/04-material.png` });
-
 // Paper + palette, document-level.
 await page.keyboard.press('Escape');
 await page.locator('.palette-row .chip', { hasText: 'Cyanotype' }).click();
