@@ -21,6 +21,7 @@ import { CanvasSurface } from './canvas.ts';
 import { Tray } from './tray.ts';
 import { FragmentPanel, PaperPanel } from './panels.ts';
 import { ExportSheet } from './exportSheet.ts';
+import { LinkBar } from './linkBar.ts';
 import { el, clear } from './dom.ts';
 
 type Tab = 'tray' | 'fragment' | 'paper';
@@ -36,6 +37,7 @@ export class App {
   private headerRight!: HTMLElement;
   private tab: Tab = 'tray';
   private banner!: HTMLElement;
+  private linkBar = new LinkBar();
 
   async mount(root: HTMLElement): Promise<void> {
     const stage = el('div', { class: 'stage' });
@@ -50,6 +52,7 @@ export class App {
         this.headerRight,
       ]),
       this.banner,
+      this.linkBar.el,
       stage,
       el('div', { class: 'dock' }, [this.tabsEl, this.panelHost]),
     );
@@ -139,7 +142,9 @@ export class App {
         savedVersionId: null,
       });
       await this.tray.load(version.theme);
-      this.flash('Someone sent you this. Change anything — it stays theirs and becomes yours.', 6000);
+      // The link bar says this, and keeps saying it; a banner on top of it is
+      // one message too many on a 390px screen.
+      this.linkBar.show(version.id);
     } catch {
       this.flash('That piece could not be found. Here is a blank one.', 5000);
       setEntryPath('cold');

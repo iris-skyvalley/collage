@@ -63,6 +63,33 @@ html, body {
   border: 1px solid var(--line);
 }
 
+.linkbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--ground-2);
+  font-size: 13px;
+}
+.linkbar[hidden] { display: none; }
+.linkbar-text { color: var(--ink-dim); flex: 1 1 auto; }
+.linkbar-btn {
+  appearance: none;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.linkbar-btn.is-active { color: var(--accent); border-color: var(--accent); }
+.linkbar-report { color: var(--ink-dim); }
+
 /* --- the canvas --- */
 .stage {
   flex: 1 1 auto;

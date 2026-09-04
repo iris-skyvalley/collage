@@ -12,6 +12,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8787',
       '/r': 'http://localhost:8787',
+      '/u': 'http://localhost:8787',
     },
   },
 });

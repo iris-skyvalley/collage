@@ -12,6 +12,7 @@ import { exportStory } from '../export/story.ts';
 import { exportReplay, replaySupported, type ReplayResult } from '../export/replay.ts';
 import { mintVersion, pushRender, type Published } from '../export/publish.ts';
 import { track } from '../lib/metrics.ts';
+import { ClaimPanel } from './claim.ts';
 
 export class ExportSheet {
   readonly el: HTMLElement;
@@ -22,6 +23,7 @@ export class ExportSheet {
   private story: { blob: Blob; canvas: HTMLCanvasElement } | null = null;
   private replay: ReplayResult | null = null;
   private busy = false;
+  private claim = new ClaimPanel();
 
   constructor() {
     this.body = el('div', { class: 'sheet-body' });
@@ -40,6 +42,11 @@ export class ExportSheet {
     this.el.hidden = false;
     this.render();
     track('export', { stage: 'opened', layers: store.comp.layers.length });
+    // Metric 5 (PRD §11) — of people arriving via a shared link, how many make
+    // one. Counted at export, which is where "made one" becomes observable.
+    if (store.get().entry === 'link') {
+      track('recipient_created', { source_version: store.get().sourceVersionId });
+    }
 
     // The URL exists before any share action.
     if (!this.published) {
@@ -130,13 +137,16 @@ export class ExportSheet {
               class: 'pill', type: 'button', text: 'Copy',
               onclick: async () => {
                 await navigator.clipboard.writeText(this.published!.url).catch(() => {});
-                track('share', { channel: 'copy_link', included_replay: false });
+                track('share', { channel: 'copy_link', included_replay: false }, this.published!.id);
+                this.claim.offer(this.published!.id);
               },
             }),
           ])
         : el('p', { class: 'hint', text: 'Minting a permanent link…' }),
       el('p', { class: 'hint', text: 'Opens as a piece someone can change, not a flat image.' }),
     ]));
+
+    this.body.append(this.claim.el);
 
     if (layers >= MAX_LAYERS) {
       this.body.append(el('p', { class: 'hint', text: `${MAX_LAYERS} pieces is the limit — that is the format, not a bug.` }));
@@ -181,6 +191,7 @@ export class ExportSheet {
         await navigator.share(data);
         track('share', { channel: 'native', included_replay: includedReplay }, this.published?.id);
         if (includedReplay) track('share_included_replay', {}, this.published?.id);
+        this.claim.offer(this.published?.id ?? null);
         return;
       }
     } catch (err) {
@@ -190,6 +201,7 @@ export class ExportSheet {
     await navigator.clipboard.writeText(url).catch(() => {});
     track('share', { channel: 'fallback', included_replay: includedReplay }, this.published?.id);
     if (includedReplay) track('share_included_replay', {}, this.published?.id);
+    this.claim.offer(this.published?.id ?? null);
   }
 }
 
