@@ -12,7 +12,7 @@ import { PIECE } from '@collage/shared/constants';
 import { orderedLayers, type Layer } from '@collage/shared/version';
 import { renderComposition } from '../render/renderer.ts';
 import { fragmentStore } from '../render/fragmentStore.ts';
-import { cornerCursor, hitHandle, type HandleHit } from '../render/selection.ts';
+import { cornerCursor, hitHandle, selectionGeometry, type HandleHit } from '../render/selection.ts';
 import { store, paletteRamp } from '../state/store.ts';
 import { trackFirstChange } from '../lib/metrics.ts';
 
@@ -49,6 +49,15 @@ export class CanvasSurface {
   private pointers = new Map<number, Pointer>();
   private gesture: Gesture | null = null;
 
+  /** The ✕. Appears on the selected piece when the mouse is over it, or after
+   *  a long-press with touch; never sits in a row of text. */
+  private removeBtn: HTMLButtonElement;
+  private hovering = false;
+  private held = false;
+  private hideTimer: number | undefined;
+  private holdTimer: number | undefined;
+  private holdStart: { x: number; y: number } | null = null;
+
   constructor(host: HTMLElement) {
     this.host = host;
     this.el = document.createElement('canvas');
@@ -59,18 +68,43 @@ export class CanvasSurface {
     this.host.appendChild(this.el);
     this.ctx = this.el.getContext('2d')!;
 
+    this.removeBtn = document.createElement('button');
+    this.removeBtn.type = 'button';
+    this.removeBtn.className = 'remove-btn';
+    this.removeBtn.textContent = '✕';
+    this.removeBtn.setAttribute('aria-label', 'Remove this piece');
+    this.removeBtn.hidden = true;
+    this.removeBtn.addEventListener('pointerenter', () => { clearTimeout(this.hideTimer); this.hovering = true; });
+    this.removeBtn.addEventListener('pointerleave', () => this.scheduleHide());
+    this.removeBtn.addEventListener('click', () => {
+      const id = store.get().selectedId;
+      if (id) store.removeLayer(id);
+      this.held = false;
+      this.hovering = false;
+      this.placeRemoveButton();
+    });
+    this.host.appendChild(this.removeBtn);
+
     const ro = new ResizeObserver(() => this.resize());
     ro.observe(host);
     this.resize();
 
     fragmentStore.onChange = () => this.requestPaint();
-    store.subscribe(() => this.requestPaint());
+    store.subscribe(() => {
+      this.requestPaint();
+      // A change of selection ends any hold; the ✕ belongs to one piece.
+      if (!store.get().selectedId) this.held = false;
+      this.placeRemoveButton();
+    });
 
     this.el.addEventListener('pointerdown', this.onDown, { passive: false });
     this.el.addEventListener('pointermove', this.onMove, { passive: false });
     this.el.addEventListener('pointerup', this.onUp);
     this.el.addEventListener('pointercancel', this.onUp);
-    this.el.addEventListener('pointerleave', () => { if (!this.gesture) this.el.style.cursor = ''; });
+    this.el.addEventListener('pointerleave', () => {
+      if (!this.gesture) this.el.style.cursor = '';
+      this.scheduleHide();
+    });
     this.el.addEventListener('wheel', this.onWheel, { passive: false });
     window.addEventListener('keydown', this.onKey);
     // The canvas owns its gestures; the page must not pan underneath them.
@@ -102,6 +136,45 @@ export class CanvasSurface {
     this.el.width = Math.round(this.cssW * dpr);
     this.el.height = Math.round(this.cssH * dpr);
     this.requestPaint();
+    this.placeRemoveButton();
+  }
+
+  /** Put the ✕ just outside the selection's top-right corner, or hide it. */
+  private placeRemoveButton(): void {
+    const layer = this.selectedLayer();
+    // A held finger has a gesture open but has not moved; that still counts.
+    const idle = !this.gesture || (this.held && !this.gesture.moved);
+    const show = !!layer && (this.hovering || this.held) && idle;
+    this.removeBtn.hidden = !show;
+    if (!show || !layer) return;
+    const g = selectionGeometry(layer);
+    // Outside the highest corner in screen space, so it never sits on a handle.
+    const corners = Object.values(g.corners);
+    const top = corners.reduce((a, b) => (b[1] < a[1] ? b : a));
+    const canvasRect = this.el.getBoundingClientRect();
+    const hostRect = this.host.getBoundingClientRect();
+    // Kept inside the frame: a piece scaled past the edge still needs its ✕
+    // somewhere you can reach.
+    const size = 26, inset = 6;
+    const cx = Math.min(this.cssW - size - inset, Math.max(inset, top[0] / this.unitScale + 14));
+    const cy = Math.min(this.cssH - size - inset, Math.max(inset, top[1] / this.unitScale - 30));
+    this.removeBtn.style.left = `${Math.round(canvasRect.left - hostRect.left + cx)}px`;
+    this.removeBtn.style.top = `${Math.round(canvasRect.top - hostRect.top + cy)}px`;
+  }
+
+  private scheduleHide(): void {
+    clearTimeout(this.hideTimer);
+    // A short grace, so the pointer can travel from the piece onto the ✕.
+    this.hideTimer = setTimeout(() => {
+      this.hovering = false;
+      this.placeRemoveButton();
+    }, 160) as unknown as number;
+  }
+
+  private cancelHold(): void {
+    clearTimeout(this.holdTimer);
+    this.holdTimer = undefined;
+    this.holdStart = null;
   }
 
   requestPaint(): void {
@@ -196,8 +269,22 @@ export class CanvasSurface {
     }
 
     const hit = this.hitTest(p.x, p.y);
+    this.held = false;
     store.select(hit);
-    if (hit) this.begin('move', hit, e);
+    if (hit) {
+      this.begin('move', hit, e);
+      if (e.pointerType !== 'mouse') {
+        // Long-press: hold still on a piece and the ✕ appears.
+        this.holdStart = { x: e.clientX, y: e.clientY };
+        this.holdTimer = setTimeout(() => {
+          this.held = true;
+          this.placeRemoveButton();
+          navigator.vibrate?.(8);
+        }, 450) as unknown as number;
+      }
+    } else {
+      this.placeRemoveButton();
+    }
   };
 
   private begin(kind: GestureKind, layerId: string, e: PointerEvent): void {
@@ -236,6 +323,7 @@ export class CanvasSurface {
       return;
     }
     e.preventDefault();
+    if (this.holdStart && Math.hypot(e.clientX - this.holdStart.x, e.clientY - this.holdStart.y) > 6) this.cancelHold();
 
     const patch: Partial<Layer['transform']> = {};
     if (g.kind === 'move') {
@@ -268,6 +356,7 @@ export class CanvasSurface {
     if (!g.moved) {
       g.moved = true;
       trackFirstChange();
+      this.placeRemoveButton();
     }
     // Not a history step: the gesture as a whole is one undo.
     store.updateTransform(g.layerId, patch);
@@ -275,11 +364,13 @@ export class CanvasSurface {
 
   private onUp = (e: PointerEvent): void => {
     this.pointers.delete(e.pointerId);
+    this.cancelHold();
     if (this.pointers.size === 0 && this.gesture) {
       const g = this.gesture;
       this.gesture = null;
       this.el.style.cursor = '';
       if (g.moved) this.commit(g);
+      this.placeRemoveButton();
     } else if (this.pointers.size === 1 && this.gesture?.kind === 'pinch') {
       // One finger lifted mid-pinch: carry on as a move from here.
       const remaining = [...this.pointers.values()][0]!;
@@ -309,6 +400,13 @@ export class CanvasSurface {
     if (e.pointerType !== 'mouse') return;
     const p = this.toComposition(e.clientX, e.clientY);
     const handle = this.handleAt(p.x, p.y);
+    const overSelected = !!handle || (this.hitTest(p.x, p.y) === store.get().selectedId && store.get().selectedId !== null);
+    if (overSelected) {
+      clearTimeout(this.hideTimer);
+      if (!this.hovering) { this.hovering = true; this.placeRemoveButton(); }
+    } else if (this.hovering) {
+      this.scheduleHide();
+    }
     if (handle?.kind === 'rotate') { this.el.style.cursor = 'grab'; return; }
     if (handle?.kind === 'scale') {
       this.el.style.cursor = cornerCursor(handle.corner, this.selectedLayer()!.transform.rotation);

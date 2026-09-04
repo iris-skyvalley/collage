@@ -68,9 +68,13 @@ await page.waitForTimeout(600);
 const afterWheel = await draft();
 console.log(`wheel: scale ${afterRot.scale.toFixed(3)} → ${afterWheel.scale.toFixed(3)}  ${afterWheel.scale > afterRot.scale ? 'OK' : 'FAIL'}`);
 
-// Delete removes it.
-await page.keyboard.press('Delete');
+// Hovering the selected piece shows the ✕; clicking it removes the piece.
+await page.mouse.move(centre.x, centre.y);
+await page.waitForTimeout(100);
+const shown = await page.locator('.remove-btn').isVisible();
+console.log(`✕ on hover: ${shown ? 'OK' : 'FAIL'}`);
+await page.locator('.remove-btn').click();
 await page.waitForTimeout(600);
 const count = await page.evaluate(() => JSON.parse(localStorage.getItem('collage.draft.v1')!).comp.layers.length);
-console.log(`delete: layers=${count}  ${count === 0 ? 'OK' : 'FAIL'}`);
+console.log(`✕ removes: layers=${count}  ${count === 0 ? 'OK' : 'FAIL'}`);
 await browser.close();
