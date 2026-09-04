@@ -110,7 +110,7 @@ export type Composition = Pick<
 
 export const DEFAULT_SUBSTRATE: Substrate = {
   stock: 'cartridge',
-  colour: '#efe7d7',
+  colour: '#ece4d3',
   texture: 'grain',
 };
 

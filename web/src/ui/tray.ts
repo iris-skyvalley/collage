@@ -23,19 +23,7 @@ export class Tray {
     // The theme switcher is present but not required (PRD §7.1), and it lives
     // with the tray it changes rather than in the tab bar.
     this.themes = el('div', { class: 'theme-switch' });
-    this.el = el('div', { class: 'tray' }, [
-      this.themes,
-      el('div', { class: 'tray-head' }, [
-        el('span', { class: 'tray-title', text: 'Tray' }),
-        el('button', {
-          class: 'linkish',
-          type: 'button',
-          text: 'Add a photo',
-          onclick: () => this.pickPhoto(),
-        }),
-      ]),
-      this.strip,
-    ]);
+    this.el = el('div', { class: 'tray' }, [this.themes, this.strip]);
     this.renderThemes();
     void this.load(store.comp.theme);
   }
@@ -60,6 +48,14 @@ export class Tray {
   private render(): void {
     clear(this.strip);
     for (const item of this.items) this.strip.append(this.cell(item));
+    // A photo is a fragment like any other, so it is offered where the
+    // fragments are: the last tile in the grid.
+    this.strip.append(el('button', {
+      class: 'tray-add',
+      type: 'button',
+      text: 'your photo',
+      onclick: () => this.pickPhoto(),
+    }));
   }
 
   private cell(item: TrayItem): HTMLElement {
@@ -77,7 +73,7 @@ export class Tray {
       type: 'button',
       title: 'More like this',
       'aria-label': `More like ${item.name}`,
-      text: '＋',
+      text: '+',
       onclick: async (e: Event) => {
         e.stopPropagation();
         const salt = (this.variantSalt.get(item.id) ?? 0) + 1;

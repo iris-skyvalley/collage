@@ -156,9 +156,9 @@ export class ExportSheet {
   private shareRow(kind: 'piece' | 'replay'): HTMLElement {
     return el('div', { class: 'row' }, [
       el('button', {
-        class: 'pill pill-primary',
+        class: kind === 'replay' ? 'pill pill-primary' : 'pill',
         type: 'button',
-        text: kind === 'replay' ? 'Share the build' : 'Share',
+        text: kind === 'replay' ? 'Share the build' : 'Share the still',
         onclick: () => this.share(kind),
       }),
     ]);

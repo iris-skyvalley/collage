@@ -127,15 +127,26 @@ function drawLayer(
 
 function drawSelection(ctx: CanvasRenderingContext2D, layer: Layer, scale: number): void {
   const tr = layer.transform;
-  const natW = (layer.fragment_ref.w ?? 512) * tr.scale * scale;
-  const natH = (layer.fragment_ref.h ?? 512) * tr.scale * scale;
+  const w = (layer.fragment_ref.w ?? 512) * tr.scale * scale;
+  const h = (layer.fragment_ref.h ?? 512) * tr.scale * scale;
   ctx.save();
   ctx.translate(tr.x * scale, tr.y * scale);
   ctx.rotate(tr.rotation);
-  ctx.strokeStyle = 'rgba(30,28,24,0.85)';
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([6, 5]);
-  ctx.strokeRect(-natW / 2, -natH / 2, natW, natH);
+  // A hairline and four square handles. Drawn in white under black so it
+  // reads on dark and light fragments alike.
+  const px = Math.max(1, scale * 2.4);
+  ctx.lineWidth = px * 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.strokeRect(-w / 2, -h / 2, w, h);
+  ctx.lineWidth = px;
+  ctx.strokeStyle = 'rgba(20,20,20,0.9)';
+  ctx.strokeRect(-w / 2, -h / 2, w, h);
+  const handle = px * 6;
+  for (const [hx, hy] of [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]] as const) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(hx - handle / 2, hy - handle / 2, handle, handle);
+    ctx.strokeRect(hx - handle / 2, hy - handle / 2, handle, handle);
+  }
   ctx.restore();
 }
 

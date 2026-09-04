@@ -160,8 +160,8 @@ export class App {
     clear(this.headerRight);
     this.headerRight.append(
       el('span', { class: 'count', text: `${comp.layers.length}/${MAX_LAYERS}` }),
-      el('button', { class: 'icon', type: 'button', 'aria-label': 'Undo', text: '↶', disabled: !store.canUndo(), onclick: () => store.undo() }),
-      el('button', { class: 'icon', type: 'button', 'aria-label': 'Redo', text: '↷', disabled: !store.canRedo(), onclick: () => store.redo() }),
+      el('button', { class: 'icon', type: 'button', 'aria-label': 'Undo', text: '↩', disabled: !store.canUndo(), onclick: () => store.undo() }),
+      el('button', { class: 'icon', type: 'button', 'aria-label': 'Redo', text: '↪', disabled: !store.canRedo(), onclick: () => store.redo() }),
       el('button', {
         class: 'pill pill-primary',
         type: 'button',

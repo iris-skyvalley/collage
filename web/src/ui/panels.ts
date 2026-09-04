@@ -225,7 +225,7 @@ export class FragmentPanel {
       el('button', { class: 'pill', type: 'button', text: 'Front', onclick: () => store.reorder(layer.id, 'front') }),
       el('button', { class: 'pill', type: 'button', text: 'Back', onclick: () => store.reorder(layer.id, 'back') }),
       el('button', { class: 'pill', type: 'button', text: 'Flip', onclick: () => store.updateTransform(layer.id, { flipX: !layer.transform.flipX }, { history: true }) }),
-      el('button', { class: 'pill pill-danger', type: 'button', text: 'Remove', onclick: () => store.removeLayer(layer.id) }),
+      el('button', { class: 'pill', type: 'button', text: 'Remove', onclick: () => store.removeLayer(layer.id) }),
     ]);
   }
 
@@ -266,7 +266,7 @@ export class PaperPanel {
       el('p', { class: 'panel-label', text: 'Texture' }),
       chips(SUBSTRATE_TEXTURES.map((t) => ({ id: t, label: label(t) })), substrate.texture,
         (id: SubstrateTexture) => store.setSubstrate({ texture: id })),
-      el('p', { class: 'panel-label', text: 'Palette — across everything' }),
+      el('p', { class: 'panel-label', text: 'Palette, across everything' }),
       chips(PALETTES.map((p) => ({ id: p.id, label: p.name })), palette,
         (id: PaletteId) => { store.setPalette(id); track('verb_applied', { verb: 'palette', detail: id }); }),
     ]));
