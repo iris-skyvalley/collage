@@ -52,6 +52,31 @@ Three things carry most of the weight:
 - **`web/src/verbs/edge.ts`** — the highest-priority verb, and the one that
   decides whether the output looks made or generated.
 
+## Deploying
+
+The app has two halves, and the halves have different needs.
+
+**The client** (`dist/web`) is static and stands on its own. Everything a
+maker does — the tray, the verbs, the replay, saving the still and the story —
+runs on the device. Generated fragments are produced from their ids in the
+browser, so the tray needs no server. What a static deploy cannot do is mint
+permanent links, receive uploads for sharing, or serve link arrivals: those
+are the server's job, and the export sheet says so in that case.
+
+**The server** is one Node process with one SQLite file. It needs a host that
+runs a long-lived process on a persistent disk — not a serverless function,
+where the file would vanish between invocations and "permanent URL" would be
+a lie.
+
+| Host | What you get | How |
+|---|---|---|
+| **Vercel, Netlify, Pages** | Client only | `vercel.json` is included: build `npm run build`, output `dist/web`, SPA fallback. Deploy the repo as-is. |
+| **Fly.io, Railway, Render** | Everything | `Dockerfile` is included. Mount a volume at `/app/data`; expose `8787`. |
+| **A VM** | Everything | `npm ci && npm run build && npm start`, with `DATABASE_FILE` on a disk you keep. |
+
+A Vercel deploy of the client with the server elsewhere is also fine: set
+Vercel rewrites for `/api`, `/r`, `/u` and `/v` to the server's origin.
+
 ## Configuration
 
 Everything has a working default; nothing below is required to run.

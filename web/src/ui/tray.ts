@@ -59,7 +59,7 @@ export class Tray {
   }
 
   private cell(item: TrayItem): HTMLElement {
-    const img = el('img', { src: item.uri, alt: item.name, loading: 'lazy', decoding: 'async', draggable: 'false' });
+    const img = el('img', { src: item.thumb ?? item.uri, alt: item.name, loading: 'lazy', decoding: 'async', draggable: 'false' });
     const button = el('button', {
       class: 'tray-item',
       type: 'button',

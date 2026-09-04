@@ -23,6 +23,7 @@ export class ExportSheet {
   private story: { blob: Blob; canvas: HTMLCanvasElement } | null = null;
   private replay: ReplayResult | null = null;
   private busy = false;
+  private mintFailed = false;
   private claim = new ClaimPanel();
 
   constructor() {
@@ -54,7 +55,10 @@ export class ExportSheet {
         this.published = await mintVersion();
         this.render();
       } catch (err) {
+        // Saving and sharing the files does not depend on the server; only
+        // the link does. Say so rather than showing a spinner forever.
         console.warn('mint failed', err);
+        this.mintFailed = true;
         this.render();
       }
     }
@@ -142,7 +146,9 @@ export class ExportSheet {
               },
             }),
           ])
-        : el('p', { class: 'hint', text: 'Minting a permanent link…' }),
+        : el('p', { class: 'hint', text: this.mintFailed
+            ? 'A permanent link needs the server, which this deployment does not have. Saving and sharing the files still works.'
+            : 'Minting a permanent link…' }),
       el('p', { class: 'hint', text: 'Opens as a piece someone can change, not a flat image.' }),
     ]));
 

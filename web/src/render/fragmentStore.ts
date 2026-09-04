@@ -12,6 +12,7 @@ import type { AppliedVerb, FragmentRef } from '@collage/shared/version';
 import { runVerbs, pipelineKey, type PipelineOptions } from '../verbs/pipeline.ts';
 import type { Bitmap } from '../verbs/types.ts';
 import { resolveUploadUrl } from '../tray/uploads.ts';
+import { localFragmentUrl } from '../tray/local.ts';
 
 export interface Processed {
   canvas: HTMLCanvasElement | OffscreenCanvas;
@@ -47,7 +48,11 @@ export class FragmentStore {
 
   private uri(ref: FragmentRef): string {
     if (ref.source === 'upload') return resolveUploadUrl(ref.id) ?? ref.uri ?? '';
-    return ref.uri ?? `/fragments/${ref.id.split('.')[0]}/${ref.id}.svg`;
+    // A generated id is its own seed: the pixels come from the generator on
+    // this device, identically to what the server would serve, and no request
+    // is made. Archive refs still resolve by URL.
+    if (ref.source === 'generated') return localFragmentUrl(ref.id) ?? ref.uri ?? '';
+    return ref.uri ?? '';
   }
 
   source(ref: FragmentRef): HTMLImageElement | undefined {

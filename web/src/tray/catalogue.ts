@@ -4,12 +4,14 @@
  * chore."
  *
  * The server is asked first (it serves pre-warmed, cached pools and any
- * archive items), and the static manifest is the fallback, so the tray is
- * never empty — including offline, which is the one state the "never a blank
- * tray" principle has to survive.
+ * archive items). Failing that, the static manifest; failing that, the tray is
+ * generated here from the same seeds. So it is never empty — on a static
+ * deploy, offline, or with the API down, which are the states the "never a
+ * blank tray" principle has to survive.
  */
 import type { ThemeId } from '@collage/shared/constants';
 import { api, type TrayItem } from '../lib/api.ts';
+import { localTray, localVariants } from './local.ts';
 
 let staticManifest: Record<string, TrayItem[]> | null = null;
 
@@ -38,7 +40,8 @@ export async function loadTray(theme: ThemeId, generation = 0): Promise<TrayItem
   } catch {
     // Fall through to the bundled tray.
   }
-  const items = (await loadStatic())[theme] ?? [];
+  const fromManifest = await loadStatic().then((m) => m[theme]).catch(() => undefined);
+  const items = fromManifest?.length ? fromManifest : localTray(theme);
   cache.set(key, items);
   return items;
 }
@@ -49,13 +52,7 @@ export async function moreLikeThis(item: TrayItem, salt: number): Promise<TrayIt
     const { items } = await api.variants(item.id, salt);
     if (items?.length) return items;
   } catch {
-    // Without a server, the family is still derivable from the id.
+    // Without a server the variants are generated here, from the same seeds.
   }
-  const [theme, family, n] = item.id.split('.');
-  const base = Number(n ?? 0);
-  return Array.from({ length: 4 }, (_, i) => ({
-    ...item,
-    id: `${theme}.${family}.${base + 7919 * (salt + 1) + i + 1}`,
-    uri: `/api/fragment/${theme}.${family}.${base + 7919 * (salt + 1) + i + 1}.svg`,
-  }));
+  return localVariants(item.id, salt);
 }

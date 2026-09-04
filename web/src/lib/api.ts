@@ -91,6 +91,8 @@ export interface TrayItem {
   w: number;
   h: number;
   uri: string;
+  /** Where to load the thumbnail from, when that differs from `uri`. */
+  thumb?: string;
   source: 'generated' | 'archive';
   credit?: { collection: string; title?: string; url?: string; licence?: string };
 }
