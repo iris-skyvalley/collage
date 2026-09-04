@@ -35,10 +35,11 @@ export class FragmentPanel {
     this.body.append(this.edgeControls(layer), this.layerActions(layer));
   }
 
-  /** A verb's row: its name, then its options; anything more sits beneath. */
+  /** A verb's row: its options, and anything more beneath. With one verb in
+   *  the editor the row needs no name — the options say what they are. */
   private row(label: string, options: HTMLElement | null, below: (HTMLElement | null)[] = []): HTMLElement {
     return el('div', { class: 'verb-row' }, [
-      el('div', { class: 'verb-line' }, [el('span', { class: 'verb-label', text: label }), options]),
+      el('div', { class: 'verb-line' }, [label ? el('span', { class: 'verb-label', text: label }) : null, options]),
       ...below,
     ]);
   }
@@ -47,7 +48,7 @@ export class FragmentPanel {
     const current = store.getVerb(layer.id, 'edge');
     const style = (current?.params['style'] as EdgeStyle) ?? 'clean';
     const roughness = (current?.params['roughness'] as number) ?? 0.5;
-    return this.row('Edge',
+    return this.row('',
       chips(EDGE_STYLES.map((s) => ({ id: s, label: label(s) })), style, (id) => {
         this.apply(layer.id, 'edge', id === 'clean' ? null : { style: id, roughness });
       }),

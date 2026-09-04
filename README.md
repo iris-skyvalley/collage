@@ -37,8 +37,9 @@ npm run typecheck
 
 One canvas, one dock beneath it, no tabs. The dock shows the tray — themes,
 a grid of cutouts, the palette — when nothing is selected, and the selected
-piece's controls when something is: an **Edge** row and a line of actions
-(front, back, flip, back to the tray). Removing a piece is on the piece
+piece's controls when something is: the ways its edge can be cut (clean, cut,
+torn, scissor, deckle, burnt), roughness, and a line of actions (front, back,
+flip, back to the tray). Removing a piece is on the piece
 itself: an ✕ appears when the mouse is over it, or after a long-press. Tap the
 paper, press Escape, or tap *Tray* to get the tray back. Nothing is more than
 one row deep.

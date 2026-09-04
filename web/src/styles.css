@@ -224,7 +224,7 @@ button { appearance: none; background: none; border: 0; padding: 0; cursor: poin
 .verb-line > .chips, .verb-line > .row, .verb-line > .match-row { flex: 1 1 auto; min-width: 0; }
 .verb-line > .slider { flex: 1 1 auto; }
 .verb-line .slider span:empty { display: none; }
-.verb-row > .slider { margin-left: 78px; }
+.verb-row > .slider { margin-top: 4px; }
 
 .chips { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 18px; }
 .chips::-webkit-scrollbar { display: none; }
