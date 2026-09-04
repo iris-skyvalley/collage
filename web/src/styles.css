@@ -89,6 +89,7 @@ html, body {
 }
 .linkbar-btn.is-active { color: var(--accent); border-color: var(--accent); }
 .linkbar-report { color: var(--ink-dim); }
+.linkbar .link-input { flex: 1 1 auto; padding: 5px 8px; font-size: 12px; }
 
 /* --- the canvas --- */
 .stage {

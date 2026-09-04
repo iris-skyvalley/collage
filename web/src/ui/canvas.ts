@@ -40,6 +40,8 @@ export class CanvasSurface {
     this.host = host;
     this.el = document.createElement('canvas');
     this.el.className = 'canvas';
+    this.el.setAttribute('role', 'application');
+    this.el.setAttribute('aria-label', 'Collage canvas. Drag to move a piece, pinch to scale and rotate.');
     this.host.appendChild(this.el);
     this.ctx = this.el.getContext('2d')!;
 

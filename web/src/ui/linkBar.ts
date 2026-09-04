@@ -40,7 +40,7 @@ export class LinkBar {
         class: 'linkbar-btn linkbar-report',
         type: 'button',
         text: 'Report',
-        onclick: () => void this.report(),
+        onclick: () => this.report(),
       }),
     );
   }
@@ -53,11 +53,27 @@ export class LinkBar {
     track('share', { action: 'reacted' }, this.versionId);
   }
 
-  private async report(): Promise<void> {
+  private report(): void {
     if (!this.versionId) return;
-    const reason = prompt('What is wrong with this piece? A short note is enough.');
-    if (reason === null) return;
-    await api.report(this.versionId, reason).catch(() => {});
-    this.el.replaceChildren(el('span', { class: 'linkbar-text', text: 'Reported. Thank you — someone will look at it.' }));
+    const input = el('input', {
+      class: 'link-input',
+      placeholder: 'What is wrong with this piece?',
+      'aria-label': 'Reason for reporting this piece',
+    });
+    const send = async (): Promise<void> => {
+      const reason = input.value.trim() || 'unspecified';
+      // The report is recorded either way; a failed request must not leave
+      // someone thinking they have no way to flag this.
+      await api.report(this.versionId!, reason).catch(() => {});
+      this.el.replaceChildren(el('span', { class: 'linkbar-text', text: 'Reported. Someone will look at it.' }));
+    };
+    input.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') void send(); });
+
+    this.el.replaceChildren(
+      input,
+      el('button', { class: 'linkbar-btn', type: 'button', text: 'Send', onclick: () => void send() }),
+      el('button', { class: 'linkbar-btn', type: 'button', text: 'Cancel', onclick: () => this.render() }),
+    );
+    input.focus();
   }
 }
