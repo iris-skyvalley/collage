@@ -1,0 +1,7 @@
+{
+  "name": "@collage/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@collage/shared": "*" }
+}

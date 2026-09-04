@@ -1,0 +1,13 @@
+{
+  "name": "@collage/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./version": "./src/version.ts",
+    "./constants": "./src/constants.ts",
+    "./fragments": "./src/fragments.ts",
+    "./id": "./src/id.ts"
+  }
+}
