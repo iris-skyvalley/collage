@@ -73,10 +73,10 @@ export function outpaintTo(
   // A long, soft fall-off — spread over the whole margin rather than stopped
   // at the piece's edge, which would put back the cliff just removed.
   const shade = ctx.createLinearGradient(0, 0, 0, h);
-  shade.addColorStop(0, 'rgba(20,16,12,0.46)');
+  shade.addColorStop(0, 'rgba(20,16,12,0.14)');
   shade.addColorStop(top / h, 'rgba(20,16,12,0)');
   shade.addColorStop((top + pieceH) / h, 'rgba(20,16,12,0)');
-  shade.addColorStop(1, 'rgba(20,16,12,0.46)');
+  shade.addColorStop(1, 'rgba(20,16,12,0.14)');
   ctx.fillStyle = shade;
   ctx.fillRect(0, 0, w, h);
 

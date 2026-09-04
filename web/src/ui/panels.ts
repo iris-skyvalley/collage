@@ -3,10 +3,7 @@
  * and controls persistent below, no modal editing". A verb is never a dialog
  * you have to dismiss to see what it did.
  */
-import {
-  EDGE_STYLES, MATERIALS, PALETTES, SUBSTRATE_STOCKS, SUBSTRATE_TEXTURES,
-  type EdgeStyle, type Material, type PaletteId, type SubstrateStockId, type SubstrateTexture,
-} from '@collage/shared/constants';
+import { EDGE_STYLES, MATERIALS, type EdgeStyle, type Material } from '@collage/shared/constants';
 import { orderedLayers, type Layer } from '@collage/shared/version';
 import { store } from '../state/store.ts';
 import { fragmentStore } from '../render/fragmentStore.ts';
@@ -14,8 +11,6 @@ import { estimateLight } from '../verbs/relight.ts';
 import { el, clear, chips, slider } from './dom.ts';
 import { track, trackFirstChange } from '../lib/metrics.ts';
 import type { CanvasSurface } from './canvas.ts';
-
-const PAPER_COLOURS = ['#efe7d7', '#f7f4ec', '#e6dcc4', '#d9d2c2', '#2a2724', '#1d2733', '#f2e3d0', '#cbd6d2'];
 
 type VerbTab = 'edge' | 'material' | 'cut' | 'extend' | 'relight';
 
@@ -235,41 +230,6 @@ export class FragmentPanel {
       trackFirstChange();
       track('verb_applied', { verb, ...(params ? { detail: String(params['style'] ?? params['material'] ?? params['mode'] ?? '') } : { cleared: true }) });
     }
-  }
-}
-
-export class PaperPanel {
-  readonly el: HTMLElement;
-
-  constructor() {
-    this.el = el('div', { class: 'panel' });
-    store.subscribe(() => this.render());
-    this.render();
-  }
-
-  private render(): void {
-    const { substrate, palette } = store.comp;
-    clear(this.el);
-    this.el.append(el('div', { class: 'panel-body' }, [
-      el('p', { class: 'panel-label', text: 'Stock' }),
-      chips(SUBSTRATE_STOCKS.map((s) => ({ id: s.id, label: s.name })), substrate.stock,
-        (id: SubstrateStockId) => store.setSubstrate({ stock: id })),
-      el('p', { class: 'panel-label', text: 'Colour' }),
-      el('div', { class: 'swatches' }, PAPER_COLOURS.map((c) =>
-        el('button', {
-          class: `swatch${c === substrate.colour ? ' is-active' : ''}`,
-          type: 'button',
-          style: `background:${c}`,
-          'aria-label': `Paper ${c}`,
-          onclick: () => store.setSubstrate({ colour: c }),
-        }))),
-      el('p', { class: 'panel-label', text: 'Texture' }),
-      chips(SUBSTRATE_TEXTURES.map((t) => ({ id: t, label: label(t) })), substrate.texture,
-        (id: SubstrateTexture) => store.setSubstrate({ texture: id })),
-      el('p', { class: 'panel-label', text: 'Palette, across everything' }),
-      chips(PALETTES.map((p) => ({ id: p.id, label: p.name })), palette,
-        (id: PaletteId) => { store.setPalette(id); track('verb_applied', { verb: 'palette', detail: id }); }),
-    ]));
   }
 }
 

@@ -55,9 +55,8 @@ await page.waitForTimeout(900);
 await page.screenshot({ path: `${SP}/04-material.png` });
 
 // Paper + palette, document-level.
-await page.locator('.tab', { hasText: 'Paper' }).click();
-await page.locator('.chip', { hasText: 'Kraft' }).click();
-await page.locator('.chip', { hasText: 'Cyanotype' }).click();
+await page.locator('.tab', { hasText: 'Tray' }).click();
+await page.locator('.palette-row .chip', { hasText: 'Cyanotype' }).click();
 await page.waitForTimeout(1200);
 await page.screenshot({ path: `${SP}/05-paper-palette.png` });
 

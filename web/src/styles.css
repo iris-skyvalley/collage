@@ -197,6 +197,18 @@ button { appearance: none; background: none; border: 0; padding: 0; cursor: poin
   padding: 8px;
 }
 
+.palette-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 0 16px 14px;
+  font-size: 13px;
+}
+.palette-label { color: var(--dim); flex: 0 0 auto; }
+.palette-row .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 14px; }
+.palette-row .chips::-webkit-scrollbar { display: none; }
+.palette-row .chip { flex: 0 0 auto; font-size: 13px; min-height: 0; padding: 2px 0; }
+
 /* --- controls: text, rules, one slider --- */
 .panel-body { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 12px; }
 .panel-label { margin: 0; font-size: 12px; color: var(--dim); }

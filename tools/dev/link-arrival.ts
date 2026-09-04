@@ -44,8 +44,8 @@ console.log(`landed on their piece in ${Date.now() - t0}ms`);
 await rx.screenshot({ path: `${SP}/11-link-arrival.png` });
 
 // The knobs are already there: change something without opening an editor.
-await rx.locator('.tab', { hasText: 'Paper' }).click();
-await rx.locator('.chip', { hasText: 'Riso duo' }).click();
+await rx.locator('.tab', { hasText: 'Tray' }).click();
+await rx.locator('.palette-row .chip', { hasText: 'Riso duo' }).click();
 await rx.waitForTimeout(900);
 console.log(`first change at ${Date.now() - t0}ms from load`);
 await rx.screenshot({ path: `${SP}/12-link-nudged.png` });

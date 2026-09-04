@@ -108,10 +108,12 @@ export type Composition = Pick<
   Version, 'theme' | 'substrate' | 'palette' | 'layers' | 'recipient'
 > & { parent_id: string | null; root_id: string | null };
 
+/** A clean white sheet. Stock, colour and texture stay in the model so a
+ *  piece can carry them, but nothing in the editor offers them. */
 export const DEFAULT_SUBSTRATE: Substrate = {
-  stock: 'cartridge',
-  colour: '#ece4d3',
-  texture: 'grain',
+  stock: 'vellum',
+  colour: '#ffffff',
+  texture: 'smooth',
 };
 
 export function emptyComposition(theme: ThemeId = 'herbarium'): Composition {

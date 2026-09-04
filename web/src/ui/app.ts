@@ -19,18 +19,17 @@ import { api } from '../lib/api.ts';
 import { setEntryPath, track } from '../lib/metrics.ts';
 import { CanvasSurface } from './canvas.ts';
 import { Tray } from './tray.ts';
-import { FragmentPanel, PaperPanel } from './panels.ts';
+import { FragmentPanel } from './panels.ts';
 import { ExportSheet } from './exportSheet.ts';
 import { LinkBar } from './linkBar.ts';
 import { el, clear } from './dom.ts';
 
-type Tab = 'tray' | 'fragment' | 'paper';
+type Tab = 'tray' | 'fragment';
 
 export class App {
   private surface!: CanvasSurface;
   private tray!: Tray;
   private fragmentPanel!: FragmentPanel;
-  private paperPanel!: PaperPanel;
   private exportSheet!: ExportSheet;
   private tabsEl!: HTMLElement;
   private panelHost!: HTMLElement;
@@ -65,7 +64,6 @@ export class App {
 
     this.tray = new Tray(() => this.setTab('fragment'));
     this.fragmentPanel = new FragmentPanel(this.surface);
-    this.paperPanel = new PaperPanel();
 
     root.addEventListener('tray:full', () => {
       this.flash(`${MAX_LAYERS} pieces is the cap. Take something off to add something new.`);
@@ -176,7 +174,6 @@ export class App {
     const tabs: { id: Tab; label: string }[] = [
       { id: 'tray', label: 'Tray' },
       { id: 'fragment', label: 'Piece' },
-      { id: 'paper', label: 'Paper' },
     ];
     for (const t of tabs) {
       this.tabsEl.append(el('button', {
@@ -193,9 +190,7 @@ export class App {
   private setTab(tab: Tab): void {
     this.tab = tab;
     clear(this.panelHost);
-    this.panelHost.append(
-      tab === 'tray' ? this.tray.el : tab === 'fragment' ? this.fragmentPanel.el : this.paperPanel.el,
-    );
+    this.panelHost.append(tab === 'tray' ? this.tray.el : this.fragmentPanel.el);
     if (tab === 'fragment') this.fragmentPanel.render();
     this.renderTabs();
   }

@@ -94,7 +94,10 @@ Everything has a working default; nothing below is required to run.
 Against PRD §12:
 
 - **M0 — Canvas.** Complete. Fixed 4:5, layer manipulation, a 60-asset tray per
-  theme, cold-arrival entry.
+  theme, cold-arrival entry. The canvas is a clean white sheet; §8.1's
+  substrate (stock, colour, texture) stays in the version record so a piece
+  can carry one, but the editor does not offer it — a product decision taken
+  after seeing it on a phone, where paper texture read as noise.
 
   One spec conflict, resolved rather than fudged: §8.1 asks for a canvas
   occupying ~65% of the viewport, and also for a fixed 4:5 frame with the

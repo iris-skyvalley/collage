@@ -1,5 +1,5 @@
 /** The tray strip: themed, finite, always populated. */
-import { MAX_LAYERS, THEMES, type ThemeId } from '@collage/shared/constants';
+import { MAX_LAYERS, PALETTES, THEMES, type PaletteId, type ThemeId } from '@collage/shared/constants';
 import type { FragmentRef } from '@collage/shared/version';
 import { store } from '../state/store.ts';
 import { el, clear, chips } from './dom.ts';
@@ -12,6 +12,7 @@ export class Tray {
   readonly el: HTMLElement;
   private strip: HTMLElement;
   private themes: HTMLElement;
+  private palette: HTMLElement;
   private items: TrayItem[] = [];
   private variantSalt = new Map<string, number>();
 
@@ -23,8 +24,13 @@ export class Tray {
     // The theme switcher is present but not required (PRD §7.1), and it lives
     // with the tray it changes rather than in the tab bar.
     this.themes = el('div', { class: 'theme-switch' });
-    this.el = el('div', { class: 'tray' }, [this.themes, this.strip]);
+    // PRD §8.3 — palette applies across all fragments at once, so it sits
+    // with the tray that supplies them rather than with any one piece.
+    this.palette = el('div', { class: 'palette-row' });
+    this.el = el('div', { class: 'tray' }, [this.themes, this.strip, this.palette]);
     this.renderThemes();
+    this.renderPalette();
+    store.subscribe(() => this.renderPalette());
     void this.load(store.comp.theme);
   }
 
@@ -35,6 +41,17 @@ export class Tray {
       void this.load(id);
       this.renderThemes();
     }));
+  }
+
+  private renderPalette(): void {
+    clear(this.palette);
+    this.palette.append(
+      el('span', { class: 'palette-label', text: 'Palette' }),
+      chips(PALETTES.map((p) => ({ id: p.id, label: p.name })), store.comp.palette, (id: PaletteId) => {
+        store.setPalette(id);
+        track('verb_applied', { verb: 'palette', detail: id });
+      }),
+    );
   }
 
   async load(theme: ThemeId): Promise<void> {

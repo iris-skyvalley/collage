@@ -31,6 +31,16 @@ export function renderSubstrate(sub: Substrate, w: number, h: number): HTMLCanva
 
   const canvas = makeCanvas(w, h);
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+
+  // Smooth is flat. A clean sheet is the default, and flat means exactly
+  // that — no tooth, no fibre, no fall-off — rather than a quieter noise.
+  if (sub.texture === 'smooth') {
+    ctx.fillStyle = sub.colour;
+    ctx.fillRect(0, 0, w, h);
+    cache.set(k, canvas);
+    return canvas;
+  }
+
   const stock = SUBSTRATE_STOCKS.find((s) => s.id === sub.stock) ?? SUBSTRATE_STOCKS[0];
   const [br, bg, bb] = hexToRgbTriple(sub.colour);
   const img = ctx.createImageData(w, h);

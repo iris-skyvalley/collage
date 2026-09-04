@@ -51,8 +51,8 @@ console.log('verbs on canvas:', await page.evaluate(() => {
   return d.comp.layers.map((l) => l.verbs.map((v) => `${v.verb}:${v.params['style'] ?? ''}`).join('+') || '-').join(' ');
 }));
 
-await page.locator('.tab', { hasText: 'Paper' }).click();
-await page.locator('.chip', { hasText: 'Foxed' }).first().click();
+await page.locator('.tab', { hasText: 'Tray' }).click();
+await page.locator('.palette-row .chip', { hasText: 'Foxed' }).click();
 await page.waitForTimeout(1200);
 await page.screenshot({ path: `${SP}/editor.png` });
 

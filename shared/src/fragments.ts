@@ -53,13 +53,6 @@ function veins(r: Rand, cx: number, top: number, bottom: number, spread: number,
   return out;
 }
 
-const grainOverlay = (id: string, opacity = 0.18): string =>
-  `<filter id="g${id}" x="-10%" y="-10%" width="120%" height="120%">` +
-  `<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7"/>` +
-  `<feColorMatrix type="saturate" values="0"/>` +
-  `<feComponentTransfer><feFuncA type="linear" slope="${opacity}"/></feComponentTransfer>` +
-  `</filter>`;
-
 // --- herbarium --------------------------------------------------------------
 
 const leaf: Gen = ({ r, ink, paper }) => {
@@ -715,7 +708,7 @@ export function fragmentId(theme: ThemeId, family: string, n: number): string {
 }
 
 export function generateFragment(id: string): FragmentSpec {
-  const [theme, familyKey, nRaw] = id.split('.');
+  const [theme, familyKey] = id.split('.');
   const fams = FAMILIES[theme as ThemeId];
   if (!fams) throw new Error(`unknown theme in fragment id: ${id}`);
   const fam = fams.find((f) => f.key === familyKey);
@@ -724,12 +717,12 @@ export function generateFragment(id: string): FragmentSpec {
   const ink = THEME_INKS[theme as ThemeId];
   const paper = THEME_PAPER[theme as ThemeId];
   const { w, h, body } = fam.gen({ r, ink, paper });
-  const gid = `${familyKey}${nRaw}`;
+  // No box, no overlay: a pre-cut fragment is its silhouette and nothing
+  // else. Surface texture is the material verb's job, applied inside the
+  // shape, never as a rectangle over it.
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">` +
-    `<defs>${grainOverlay(gid, 0.14)}</defs>` +
     `<g>${body}</g>` +
-    `<rect x="0" y="0" width="${w}" height="${h}" filter="url(#g${gid})" opacity="0.5" style="mix-blend-mode:multiply" pointer-events="none"/>` +
     `</svg>`;
   return { id, theme: theme as ThemeId, family: familyKey!, name: fam.name, w, h, svg };
 }
