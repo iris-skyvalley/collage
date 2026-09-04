@@ -49,11 +49,13 @@ export function createApp(): Express {
     res.send(Buffer.from(row.bytes));
   });
 
-  app.get('/api/versions/:id/card.svg', (req, res) => {
+  /** The card for a piece whose renders have not been pushed yet. */
+  app.get('/api/versions/:id/card.png', (req, res) => {
     const version = loadVersion(param(req, 'id'));
     if (!version) return fail(res, 404, 'No such piece.');
-    res.set('content-type', 'image/svg+xml; charset=utf-8');
-    res.set('cache-control', 'public, max-age=300');
+    res.set('content-type', 'image/png');
+    // Short-lived: this becomes the real render moments later.
+    res.set('cache-control', 'public, max-age=120');
     res.send(placeholderCard(version));
   });
 

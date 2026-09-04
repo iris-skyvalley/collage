@@ -39,9 +39,6 @@ const S = 512;
 
 // --- shared drawing helpers -------------------------------------------------
 
-const jitterCircle = (r: Rand, cx: number, cy: number, rad: number, wob = 0.08, steps = 22): string =>
-  radialBlob(cx, cy, steps, (t) => rad * (1 + Math.sin(t * r.int(2, 5) + r() * 6) * wob));
-
 function veins(r: Rand, cx: number, top: number, bottom: number, spread: number, n: number, stroke: string): string {
   let out = '';
   for (let i = 1; i <= n; i++) {

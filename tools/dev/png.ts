@@ -1,4 +1,5 @@
-/** Dev-only minimal PNG encoder, so verb output can be eyeballed from Node. */
+/** Dev-only RGBA PNG encoder, so verb output can be eyeballed from Node.
+ *  The server has its own RGB encoder for OG cards; this one keeps alpha. */
 import { deflateSync } from 'node:zlib';
 
 function crc32(buf: Uint8Array): number {
@@ -28,7 +29,7 @@ export function encodePng(rgba: Uint8ClampedArray, w: number, h: number): Buffer
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0);
   ihdr.writeUInt32BE(h, 4);
-  ihdr[8] = 8; ihdr[9] = 6; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
+  ihdr[8] = 8; ihdr[9] = 6;
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', ihdr),

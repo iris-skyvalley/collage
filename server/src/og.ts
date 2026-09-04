@@ -9,6 +9,7 @@
  */
 import { PIECE } from '@collage/shared/constants';
 import type { Version } from '@collage/shared/version';
+import { encodePngRgb } from './lib/png.ts';
 
 const escapeHtml = (s: string): string =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -16,9 +17,10 @@ const escapeHtml = (s: string): string =>
 export function cardHtml(version: Version, appHtml: string, origin: string): string {
   const image = version.render_hashes.piece
     ? `${origin}/r/${version.render_hashes.piece}`
-    : `${origin}/api/versions/${version.id}/card.svg`;
+    : `${origin}/api/versions/${version.id}/card.png`;
   const title = 'Someone made you a collage';
-  const description = `${version.layers.length} pieces, torn and laid down. Open it and change anything.`;
+  const n = version.layers.length;
+  const description = `${n} ${n === 1 ? 'piece' : 'pieces'}, torn and laid down. Open it and change anything.`;
 
   const tags = [
     `<meta property="og:type" content="article" />`,
@@ -37,19 +39,62 @@ export function cardHtml(version: Version, appHtml: string, origin: string): str
   return appHtml.replace('</head>', `    ${tags}\n  </head>`);
 }
 
-/** A placeholder card built from the record itself — the substrate colour and
- *  the layer count — so an unrendered piece still unfurls as something. */
-export function placeholderCard(version: Version): string {
-  const bg = /^#[0-9a-fA-F]{6}$/.test(version.substrate.colour) ? version.substrate.colour : '#efe7d7';
-  const marks = version.layers.slice(0, 12).map((l, i) => {
-    const x = (l.transform.x / PIECE.w) * 100;
-    const y = (l.transform.y / PIECE.h) * 100;
-    const r = Math.max(3, Math.min(22, l.transform.scale * 26));
-    return `<circle cx="${x.toFixed(1)}%" cy="${y.toFixed(1)}%" r="${r.toFixed(1)}%" fill="rgba(40,34,26,${(0.1 + (i % 4) * 0.05).toFixed(2)})" />`;
-  }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PIECE.w} ${PIECE.h}" width="${PIECE.w}" height="${PIECE.h}">
-  <rect width="100%" height="100%" fill="${bg}"/>
-  ${marks}
-  <text x="50%" y="94%" text-anchor="middle" font-family="Georgia, serif" font-size="44" fill="rgba(40,34,26,0.6)">collage</text>
-</svg>`;
+/**
+ * A placeholder card, drawn from the record itself — the substrate colour and
+ * where the layers sit. The link is minted before the renders are pushed, and
+ * a link pasted in that window still has to unfurl into something.
+ */
+export function placeholderCard(version: Version): Buffer {
+  const w = PIECE.w, h = PIECE.h;
+  const [br, bg, bb] = parseHex(version.substrate.colour);
+  const px = new Uint8Array(w * h * 3);
+  for (let i = 0; i < w * h; i++) {
+    px[i * 3] = br;
+    px[i * 3 + 1] = bg;
+    px[i * 3 + 2] = bb;
+  }
+
+  // One soft mark per layer, at its own place and size: enough for the card to
+  // read as this particular piece rather than as a generic brand tile.
+  for (const layer of version.layers.slice(0, 20)) {
+    const cx = layer.transform.x;
+    const cy = layer.transform.y;
+    const radius = Math.max(24, Math.min(w * 0.42, (layer.fragment_ref.w ?? 512) * layer.transform.scale * 0.42));
+    const x0 = Math.max(0, Math.floor(cx - radius)), x1 = Math.min(w - 1, Math.ceil(cx + radius));
+    const y0 = Math.max(0, Math.floor(cy - radius)), y1 = Math.min(h - 1, Math.ceil(cy + radius));
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const d = Math.hypot(x - cx, y - cy) / radius;
+        if (d >= 1) continue;
+        const a = (1 - d * d) * 0.34;
+        const i = (y * w + x) * 3;
+        px[i] = px[i]! * (1 - a) + 46 * a;
+        px[i + 1] = px[i + 1]! * (1 - a) + 40 * a;
+        px[i + 2] = px[i + 2]! * (1 - a) + 32 * a;
+      }
+    }
+  }
+
+  // A drawn border, so the card reads as a sheet with edges.
+  const edge = 14;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const d = Math.min(x, y, w - 1 - x, h - 1 - y);
+      if (d >= edge) continue;
+      const a = (1 - d / edge) * 0.4;
+      const i = (y * w + x) * 3;
+      px[i] = px[i]! * (1 - a) + 34 * a;
+      px[i + 1] = px[i + 1]! * (1 - a) + 30 * a;
+      px[i + 2] = px[i + 2]! * (1 - a) + 24 * a;
+    }
+  }
+
+  return encodePngRgb(px, w, h);
 }
+
+const parseHex = (hex: string): [number, number, number] => {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex);
+  if (!m) return [239, 231, 215];
+  const v = parseInt(m[1]!, 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+};

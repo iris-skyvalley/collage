@@ -70,6 +70,15 @@ Against PRD §12:
 
 - **M0 — Canvas.** Complete. Fixed 4:5, layer manipulation, a 60-asset tray per
   theme, cold-arrival entry.
+
+  One spec conflict, resolved rather than fudged: §8.1 asks for a canvas
+  occupying ~65% of the viewport, and also for a fixed 4:5 frame with the
+  controls persistent below rather than over it. On a 390 × 844 phone a
+  full-bleed 4:5 frame is 56% of viewport height — 65% would need a canvas
+  439px wide on a 390px screen. The frame and the non-modal controls are the
+  two hard constraints, so the canvas is drawn as large as 4:5 permits and the
+  number lands at 56%. `node tools/dev/measure.ts` reports it for any
+  viewport.
 - **M1 — Verbs.** Edge, material and palette are complete and run locally with
   no provider. Cut ships its region mode; extend ships local extrapolation;
   relight ships a measured light match. All three carry a provider seam for a

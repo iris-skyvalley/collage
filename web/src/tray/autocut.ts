@@ -10,7 +10,7 @@
  * A configured segmentation provider supersedes this; the import path is the
  * same either way, because the result is a fragment either way.
  */
-import { luma, type Bitmap } from '../verbs/types.ts';
+import type { Bitmap } from '../verbs/types.ts';
 
 export interface AutoCutOptions {
   /** 0..1 — how far from the corner colours still counts as background. */

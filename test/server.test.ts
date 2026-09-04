@@ -283,3 +283,24 @@ describe('identity comes after value', () => {
     assert.equal((await fetch(`${base}${dev_link}`, { redirect: 'manual' })).status, 410);
   });
 });
+
+describe('the OG card', () => {
+  test('is a PNG, because the platforms this ships through will not unfurl an SVG', async () => {
+    const { id } = await (await post('/api/versions', { composition: composition() })).json() as { id: string };
+    const res = await fetch(`${base}/api/versions/${id}/card.png`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'image/png');
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    assert.deepEqual(Array.from(bytes.slice(0, 8)), [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    // IHDR carries the piece's dimensions, which is what the card tags claim.
+    const view = new DataView(bytes.buffer);
+    assert.equal(view.getUint32(16), 1080);
+    assert.equal(view.getUint32(20), 1350);
+  });
+
+  test('a taken-down piece has no card either', async () => {
+    const { id } = await (await post('/api/versions', { composition: composition() })).json() as { id: string };
+    db.prepare('UPDATE versions SET takedown = 1 WHERE id = ?').run(id);
+    assert.equal((await fetch(`${base}/api/versions/${id}/card.png`)).status, 404);
+  });
+});

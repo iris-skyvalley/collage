@@ -40,6 +40,7 @@ export class FragmentStore {
   private loading = new Map<string, Promise<HTMLImageElement>>();
   private processed = new Map<string, Processed>();
   private working = new Set<string>();
+  private failed = new Set<string>();
   private order: string[] = [];
   /** Called whenever new pixels become available and the canvas should repaint. */
   onChange: () => void = () => {};
@@ -65,7 +66,13 @@ export class FragmentStore {
       p.then((img) => {
         this.sources.set(ref.id, img);
         this.onChange();
-      }).catch((err) => console.warn(err));
+      }).catch((err) => {
+        // A fragment that cannot load must not keep the export waiting; it is
+        // left out and the rest of the piece still renders.
+        this.failed.add(ref.id);
+        console.warn(err);
+        this.onChange();
+      });
     }
     return undefined;
   }
@@ -148,7 +155,7 @@ export class FragmentStore {
   /** Whether every layer in a composition has final pixels — the export path
    *  waits on this so a share never captures a placeholder. */
   isSettled(): boolean {
-    return this.working.size === 0 && this.loading.size === this.sources.size;
+    return this.working.size === 0 && this.loading.size === this.sources.size + this.failed.size;
   }
 
   private remember(key: string, p: Processed): void {
@@ -163,6 +170,7 @@ export class FragmentStore {
   invalidateUpload(id: string): void {
     this.sources.delete(id);
     this.loading.delete(id);
+    this.failed.delete(id);
     for (const key of [...this.processed.keys()]) {
       if (key.startsWith(`${id}|`) || key.startsWith(`raw|${id}|`)) this.processed.delete(key);
     }

@@ -13,7 +13,7 @@
   --accent: #d8a24a;
   --danger: #c4614a;
   --radius: 10px;
-  --dock-h: 40vh;
+  --dock-h: 34vh;
   color-scheme: dark;
 }
 
@@ -96,7 +96,9 @@ html, body {
   min-height: 0;
   display: grid;
   place-items: center;
-  padding: 4px 12px 10px;
+  /* Near-full-bleed: with a fixed 4:5 frame the canvas is width-limited on a
+     phone, so every horizontal pixel given away is vertical size lost. */
+  padding: 2px 6px 8px;
 }
 .canvas {
   border-radius: 3px;
@@ -171,7 +173,9 @@ html, body {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding: 4px 12px 10px;
+  /* Near-full-bleed: with a fixed 4:5 frame the canvas is width-limited on a
+     phone, so every horizontal pixel given away is vertical size lost. */
+  padding: 2px 6px 8px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
 }
@@ -359,7 +363,7 @@ html, body {
 }
 
 @media (min-width: 900px) {
-  :root { --dock-h: 46vh; }
+  :root { --dock-h: 40vh; }
   #app { max-width: 640px; margin: 0 auto; border-inline: 1px solid var(--line); }
 }
 

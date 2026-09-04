@@ -18,8 +18,7 @@
 import {
   EDGE_STYLES, MATERIALS, MAX_LAYERS, PALETTES, SUBSTRATE_STOCKS,
   SUBSTRATE_TEXTURES, THEME_IDS, VERBS,
-  type EdgeStyle, type Material, type PaletteId, type SubstrateStockId,
-  type SubstrateTexture, type ThemeId, type VerbName,
+  type PaletteId, type SubstrateStockId, type SubstrateTexture, type ThemeId, type VerbName,
 } from './constants.ts';
 
 export type { VerbName, EdgeStyle, Material, PaletteId, SubstrateStockId, SubstrateTexture, ThemeId } from './constants.ts';
