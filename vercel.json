@@ -1,8 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/web",
-  "rewrites": [
-    { "source": "/((?!api/|r/|u/|fragments/|assets/|favicon\\.svg).*)", "destination": "/index.html" }
-  ]
-}
