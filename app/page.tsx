@@ -30,7 +30,6 @@ export default function Home() {
     [category, setCategory] = useState('All pieces'),
     [query, setQuery] = useState(''),
     [title, setTitle] = useState('The art of getting dressed'),
-    [bg, setBg] = useState('#ffffff'),
     [zoom, setZoom] = useState(85),
     [notice, setNotice] = useState(''),
     [history, setHistory] = useState<Piece[][]>([]),
@@ -95,7 +94,7 @@ export default function Home() {
       c.height = 1400;
       const ctx = c.getContext('2d')!;
       ctx.scale(2, 2);
-      ctx.fillStyle = bg;
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, 600, 700);
       for (const p of pieces) {
         ctx.save();
@@ -401,7 +400,7 @@ export default function Home() {
               <div
                 ref={canvas}
                 className="board"
-                style={{ background: bg, transform: `scale(${zoom / 100})` }}
+                style={{ background: '#ffffff', transform: `scale(${zoom / 100})` }}
                 onPointerDown={(e) => {
                   if (e.target === e.currentTarget) setSelected(null);
                 }}
@@ -661,29 +660,6 @@ export default function Home() {
               </p>
             </div>
           )}
-          <div className="background">
-            <label>Canvas color</label>
-            <div className="swatches">
-              {['#ffffff', '#f5eee4', '#e6e3f3', '#e6eddf', '#232323'].map(
-                (c) => (
-                  <button
-                    key={c}
-                    aria-label={'Canvas color ' + c}
-                    style={{ background: c }}
-                    onClick={() => setBg(c)}
-                    className={bg === c ? 'checked' : ''}
-                  >
-                    {bg === c && (
-                      <Check
-                        size={13}
-                        color={c === '#232323' ? 'white' : 'black'}
-                      />
-                    )}
-                  </button>
-                ),
-              )}
-            </div>
-          </div>
           <div className="layers">
             <div className="eyebrow">
               ON YOUR CANVAS <span>{pieces.length}</span>
