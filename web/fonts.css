@@ -1,0 +1,4 @@
+@font-face{font-family:Geist;font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/geist-regular.ttf') format('truetype')}
+@font-face{font-family:Geist;font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/geist-medium.ttf') format('truetype')}
+@font-face{font-family:Geist;font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/geist-semibold.ttf') format('truetype')}
+:root{--font-geist-sans:Geist,Arial,Helvetica,sans-serif;--font-geist-mono:'Courier New',monospace}
