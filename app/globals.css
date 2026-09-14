@@ -170,3 +170,29 @@ body{font-size:16px}.filters button,.search input,.library-tabs button,.inspecto
 .studio-divider:hover,.studio-divider:focus-visible,.studio-divider[data-separator="active"]{background:#baa6d3}
 .studio-divider>div{height:34px;background:#a18bab;width:3px}
 @media(max-width:760px){.studio-panels{display:block!important;height:auto!important}.studio-panels>[data-slot=resizable-panel]{height:auto!important;width:100%!important;overflow:visible!important}.studio-panels .worktable,.studio-panels .library{height:auto}.studio-divider{display:none!important}}
+/* Clipping: the header buttons, the clipper popover, and the clipped library. */
+.header-button{display:flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:#4f4757;background:#fff;white-space:nowrap}
+.clipper-popover{width:340px;max-width:calc(100vw - 32px);padding:18px 18px 16px}
+.clipper-popover p{font-size:13px;line-height:1.55;color:#5b5363;margin:8px 0 14px}
+.clipper-popover small{display:block;font-size:12px;line-height:1.5;color:#8d8495;margin-top:14px}
+.bookmarklet{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:7px;background:#7361a2;color:#fff;font-size:13px;font-weight:600;text-decoration:none;cursor:grab;box-shadow:0 3px 10px #7361a233}
+.bookmarklet:active{cursor:grabbing}
+.tab-count{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;background:#ede6f5;color:#584074;font-size:11px;line-height:16px}
+.clipped-heading{margin-top:22px}
+.clip-card{display:flex;flex-direction:column}
+.clip-card .product-image{width:100%;cursor:pointer;background:#f4f3f3 repeating-conic-gradient(#efedf1 0 25%,#f7f6f8 0 50%) 0 0/16px 16px}
+.clip-card .product-image img{mix-blend-mode:normal}
+.clip-flag{position:absolute;left:7px;top:7px;font-size:10px;letter-spacing:1px;text-transform:uppercase;background:#ffffffd9;color:#7a7182;padding:3px 6px;border-radius:3px}
+.clip-card .usage{color:#6e4c95;font-weight:500}
+.clip-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px;font-size:12px}
+.clip-actions a{display:inline-flex;align-items:center;gap:4px;color:#8d8495;text-decoration:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.clip-actions a:hover{color:#584074}
+.clip-actions button{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;color:#a39cab;flex-shrink:0}
+.clip-actions button:hover{background:#f1eaf7;color:#584074}
+.clipped-empty{text-align:center;padding:48px 12px 28px;color:#95889e}
+.clipped-empty svg{margin:auto}
+.clipped-empty h2{font:24px Georgia;margin:16px 0 10px;color:#5b4f66}
+.clipped-empty p{font-size:13px;line-height:1.6;margin:0}
+.clipped-empty strong{color:#584074;font-weight:600}
+@media(max-width:1150px){.header-button span{display:none}}
+@media(max-width:760px){.header-button{padding:9px 10px;font-size:12px}.header-right{gap:8px}}

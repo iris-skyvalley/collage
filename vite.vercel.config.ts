@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/postcss';
 import { fileURLToPath, URL } from 'node:url';
 
 // The collage editor is entirely client-side; Vercel needs only static assets.
+// The clipper (clip.js) is built separately by vite.clip.config.ts.
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@': fileURLToPath(new URL('.', import.meta.url)) } },

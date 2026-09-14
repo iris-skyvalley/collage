@@ -1,14 +1,9 @@
-export type Piece = {
-  id: string;
-  product: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  r: number;
-  text?: string;
-  style?: 'serif' | 'stamp' | 'caption';
-};
+import type { CreationPiece } from '@/lib/objects/schema';
+/**
+ * A piece on the canvas. `product` is a catalog id, or 'object' when the
+ * piece is a clipped object (then `object` holds the ClipObject id).
+ */
+export type Piece = CreationPiece;
 export type Product = {
   id: string;
   name: string;

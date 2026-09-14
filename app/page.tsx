@@ -20,6 +20,10 @@ import {
   Check,
   Move,
   Sparkles,
+  Scissors,
+  ExternalLink,
+  FilePlus,
+  X,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
@@ -35,6 +39,13 @@ import {
   PopoverTitle,
 } from '@/components/ui/popover';
 import { products, initial, textMetrics, type Piece } from './collage';
+import {
+  useLibrary,
+  useClipReceiver,
+  formatPrice,
+  bookmarkletFor,
+} from '@/hooks/use-library';
+import type { ClipObject } from '@/lib/objects/schema';
 export default function Home() {
   const [pieces, setPieces] = useState<Piece[]>(initial),
     [selected, setSelected] = useState<string | null>(null),
@@ -55,6 +66,67 @@ export default function Home() {
     oy: number;
   } | null>(null);
   const current = pieces.find((p) => p.id === selected);
+  const library = useLibrary(pieces, title);
+  // React refuses javascript: hrefs; the bookmarklet is one by design. It is
+  // for dragging to the bookmarks bar, so a click in the studio is a no-op.
+  function bookmarklet(a: HTMLAnchorElement | null) {
+    if (!a) return;
+    a.setAttribute(
+      'href',
+      bookmarkletFor(location.origin, import.meta.env.DEV),
+    );
+    const swallow = (e: Event) => e.preventDefault();
+    a.addEventListener('click', swallow);
+    return () => a.removeEventListener('click', swallow);
+  }
+  const { loadCreation } = library;
+  useEffect(() => {
+    loadCreation()
+      .then((saved) => {
+        if (saved) {
+          setPieces(saved);
+          setSelected(null);
+        }
+      })
+      .catch(() => {});
+  }, [loadCreation]);
+  useClipReceiver((payload) => {
+    announce('Clipping…');
+    library
+      .clip(payload)
+      .then((o) => {
+        actions.current.addObject(o);
+        setTab('clipped');
+        announce(
+          `Clipped “${o.title}”` +
+            (o.source.retailer ? ` from ${o.source.retailer}.` : '.'),
+        );
+      })
+      .catch(() => announce('That clip could not be saved.'));
+  });
+  /** The image to draw for a piece: a catalog PNG or a clipped object. */
+  function imageSrc(p: Piece): string | undefined {
+    return p.object
+      ? library.srcById(p.object)
+      : '/pieces/' + p.product + '.png';
+  }
+  function addObject(o: ClipObject) {
+    const ref = o.cutoutImage ?? o.originalImage;
+    const w = ref.width ? Math.min(260, ref.width) : 230;
+    const h = ref.width && ref.height ? (w * ref.height) / ref.width : 230;
+    const p: Piece = {
+      id: crypto.randomUUID(),
+      product: 'object',
+      object: o.id,
+      x: 300 - w / 2,
+      y: 350 - h / 2,
+      w,
+      h,
+      r: 0,
+    };
+    commit([...pieces, p]);
+    setSelected(p.id);
+  }
   function commit(next: Piece[]) {
     setHistory((h) => [...h, pieces]);
     setFuture([]);
@@ -131,8 +203,10 @@ export default function Home() {
             ),
           );
         } else {
+          const src = imageSrc(p);
+          if (!src) continue;
           const img = new Image();
-          img.src = '/pieces/' + p.product + '.png';
+          img.src = src;
           await img.decode();
           const s = Math.min(p.w / img.width, p.h / img.height);
           ctx.drawImage(
@@ -173,8 +247,8 @@ export default function Home() {
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
   }, [pieces, selected, history, future]);
-  const actions = useRef({ add });
-  actions.current = { add };
+  const actions = useRef({ add, addObject });
+  actions.current = { add, addObject };
   useEffect(() => {
     const context = (
       document as Document & {
@@ -232,8 +306,50 @@ export default function Home() {
         <span className="studio-label">THE COLLAGE STUDIO</span>
         <div className="header-right">
           <span className="session">
-            <span /> A little space for your taste
+            <span />{' '}
+            {library.persistent
+              ? 'Saved in this browser as you go'
+              : 'A little space for your taste'}
           </span>
+          <button
+            className="header-button"
+            title="Start a new collage; this one stays in your library"
+            onClick={() => {
+              library.startNewCreation();
+              commit([]);
+              setSelected(null);
+              announce('A blank sheet. The last one is kept.');
+            }}
+          >
+            <FilePlus size={16} /> New
+          </button>
+          <Popover>
+            <PopoverTrigger className="header-button">
+              <Scissors size={16} /> Clip from the web
+            </PopoverTrigger>
+            <PopoverContent align="end" className="clipper-popover">
+              <PopoverTitle>The clipper</PopoverTitle>
+              <p>
+                Drag this to your bookmarks bar. On any product page, click it,
+                hover over a photo, and click: the object lands in your library
+                with its brand, price and retailer.
+              </p>
+              <a
+                ref={bookmarklet}
+                href="#clipper"
+                className="bookmarklet"
+                draggable
+                title="Drag me to your bookmarks bar"
+              >
+                <Scissors size={15} /> Clip to Offcut
+              </a>
+              <small>
+                Photos on a plain backdrop are cut out automatically. Sites with
+                a strict content policy can block the bookmarklet; a browser
+                extension is the next step for those.
+              </small>
+            </PopoverContent>
+          </Popover>
           <button className="export" onClick={download}>
             Export collage <ArrowUpRight size={17} />
           </button>
@@ -333,12 +449,9 @@ export default function Home() {
                           {p.text ? (
                             <Type size={22} />
                           ) : (
-                            <img src={'/pieces/' + p.product + '.png'} alt="" />
+                            <img src={imageSrc(p)} alt="" />
                           )}
-                          <span>
-                            {p.text ||
-                              products.find((x) => x.id === p.product)?.name}
-                          </span>
+                          <span>{p.text || pieceName(p, library.objects)}</span>
                         </button>
                       ))}
                     </div>
@@ -439,6 +552,9 @@ export default function Home() {
                       e.preventDefault();
                       const id = e.dataTransfer.getData('product');
                       if (products.some((p) => p.id === id)) add(id);
+                      const objectId = e.dataTransfer.getData('object');
+                      const o = library.objects.find((x) => x.id === objectId);
+                      if (o) addObject(o);
                     }}
                   >
                     {pieces.map((p) => (
@@ -446,10 +562,7 @@ export default function Home() {
                         key={p.id}
                         tabIndex={0}
                         role="button"
-                        aria-label={
-                          p.text ||
-                          products.find((x) => x.id === p.product)?.name
-                        }
+                        aria-label={p.text || pieceName(p, library.objects)}
                         className={
                           'piece ' + (selected === p.id ? 'selected' : '')
                         }
@@ -549,11 +662,7 @@ export default function Home() {
                             {p.text}
                           </span>
                         ) : (
-                          <img
-                            draggable={false}
-                            src={'/pieces/' + p.product + '.png'}
-                            alt=""
-                          />
+                          <img draggable={false} src={imageSrc(p)} alt="" />
                         )}
                         {selected === p.id && (
                           <>
@@ -619,9 +728,34 @@ export default function Home() {
                 <TabsList className="library-tabs" variant="line">
                   <TabsTrigger value="pieces">The edit</TabsTrigger>
                   <TabsTrigger value="text">Typography</TabsTrigger>
+                  <TabsTrigger value="clipped">
+                    Clipped
+                    {library.objects.length > 0 && (
+                      <span className="tab-count">
+                        {library.objects.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
-              {
+              {tab === 'clipped' ? (
+                <ClippedLibrary
+                  objects={library.objects}
+                  usage={library.usage}
+                  src={library.src}
+                  query={query}
+                  onQuery={setQuery}
+                  onAdd={addObject}
+                  onRemove={(o) => {
+                    if (pieces.some((p) => p.object === o.id))
+                      commit(pieces.filter((p) => p.object !== o.id));
+                    library
+                      .remove(o)
+                      .then(() => announce('Removed from your library.'))
+                      .catch(() => announce('Could not remove that.'));
+                  }}
+                />
+              ) : (
                 <>
                   <label className="search">
                     <Search size={17} />
@@ -696,7 +830,7 @@ export default function Home() {
                     </p>
                   )}
                 </>
-              }
+              )}
               <div className="library-footer">
                 <Move size={15} /> Click or drag a piece onto your canvas.
               </div>
@@ -711,5 +845,136 @@ export default function Home() {
         </div>
       )}
     </main>
+  );
+}
+
+function pieceName(p: Piece, objects: ClipObject[]): string | undefined {
+  return p.object
+    ? objects.find((o) => o.id === p.object)?.title
+    : products.find((x) => x.id === p.product)?.name;
+}
+
+function ClippedLibrary({
+  objects,
+  usage,
+  src,
+  query,
+  onQuery,
+  onAdd,
+  onRemove,
+}: {
+  objects: ClipObject[];
+  usage: Record<string, number>;
+  src: (o: ClipObject) => string | undefined;
+  query: string;
+  onQuery: (q: string) => void;
+  onAdd: (o: ClipObject) => void;
+  onRemove: (o: ClipObject) => void;
+}) {
+  const shown = objects.filter((o) =>
+    [
+      o.title,
+      o.brand,
+      o.category,
+      o.source.retailer,
+      ...Object.values(o.attributes),
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(query.toLowerCase()),
+  );
+  const used = objects.reduce((n, o) => n + (usage[o.id] || 0), 0);
+  return (
+    <>
+      <label className="search">
+        <Search size={17} />
+        <input
+          placeholder="Search what you clipped"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+        />
+        <kbd>⌕</kbd>
+      </label>
+      <div className="catalog-heading clipped-heading">
+        <span>{query ? 'SEARCH RESULTS' : 'YOUR CLIPS'}</span>
+        <span>
+          {shown.length} objects · used {used} {used === 1 ? 'time' : 'times'}
+        </span>
+      </div>
+      {objects.length === 0 ? (
+        <div className="clipped-empty">
+          <Scissors />
+          <h2>Nothing clipped yet.</h2>
+          <p>
+            Use <strong>Clip from the web</strong> above to lift a dress, a lamp
+            or a chair off any product page. It arrives here as an object you
+            can drop on the canvas.
+          </p>
+        </div>
+      ) : (
+        <div className="products">
+          {shown.map((o) => {
+            const n = usage[o.id] || 0;
+            const meta = [o.brand, formatPrice(o)].filter(Boolean).join(' · ');
+            return (
+              <div className="product clip-card" key={o.id}>
+                <button
+                  className="product-image"
+                  onClick={() => onAdd(o)}
+                  title={`Add “${o.title}” to the canvas`}
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData('object', o.id)}
+                >
+                  <img src={src(o)} alt={o.title} />
+                  <span className="add">
+                    <Plus size={15} />
+                  </span>
+                  {o.cutout.status !== 'done' && (
+                    <span
+                      className="clip-flag"
+                      title={
+                        o.cutout.status === 'skipped'
+                          ? o.cutout.reason
+                          : undefined
+                      }
+                    >
+                      photo
+                    </span>
+                  )}
+                </button>
+                <strong>{o.title}</strong>
+                <small>{meta || o.category || o.source.retailer}</small>
+                <small className="usage">
+                  {n
+                    ? `Used in ${n} ${n === 1 ? 'creation' : 'creations'}`
+                    : 'Not used yet'}
+                </small>
+                <span className="clip-actions">
+                  <a
+                    href={o.source.canonicalUrl ?? o.source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={`Open at ${o.source.retailer ?? o.source.host}`}
+                  >
+                    <ExternalLink size={13} />{' '}
+                    {o.source.retailer ?? o.source.host}
+                  </a>
+                  <button
+                    aria-label={`Remove ${o.title} from your library`}
+                    title="Remove from your library"
+                    onClick={() => onRemove(o)}
+                  >
+                    <X size={13} />
+                  </button>
+                </span>
+              </div>
+            );
+          })}
+          {!shown.length && (
+            <p className="empty">No clips match. Try a different search.</p>
+          )}
+        </div>
+      )}
+    </>
   );
 }
