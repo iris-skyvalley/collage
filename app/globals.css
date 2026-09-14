@@ -136,3 +136,28 @@ body {
 
 body{font-size:16px}.filters button,.search input,.library-tabs button,.inspector h2,.background>label,.range-label,.field,.product strong{font-size:14px}.product small{font-size:12px}.canvas-caption{font-size:10px}.piece img{mix-blend-mode:normal}.collage-text{max-width:100%;overflow:hidden}.session{font-size:12px}
 .collage-text{display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre;overflow:visible;width:100%;height:100%;padding:0}.type-sample{white-space:pre-line;text-align:center;padding:12px;font:italic 25px Georgia;color:#27212b;line-height:1.15}.type-sample.stamp{font:900 19px/1 Arial;color:#ab2029}.type-sample.caption{font:12px/1.5 Arial;letter-spacing:1px}.field textarea{border:1px solid var(--border);padding:8px;width:100%;margin-top:8px;resize:vertical;font-size:14px}.product-image{height:145px}.layers{max-height:420px;overflow:auto}.library-head p{font-size:14px}.filters.hidden{display:none}.piece.selected{z-index:auto}.range-label{font-size:14px}
+/* Two working areas: canvas and catalog. Selection tools stay above the canvas. */
+.workspace{grid-template-columns:minmax(0,1fr) 360px;min-height:720px}
+.worktable{order:0;min-height:0}
+.library{order:1;border-right:0;border-left:1px solid var(--border)}
+.editor-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px 18px;padding:12px 24px;min-height:66px;background:#fff;border-bottom:1px solid var(--border)}
+.editor-toolbar .toolrail{position:static;flex-direction:row;box-shadow:none;border:0;padding:0;gap:5px;background:none}
+.editor-toolbar .toolrail>span{width:1px;height:22px;margin:6px 7px}
+.layers-toggle{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;color:#716878}
+.selection-tools{display:flex;align-items:center;flex-wrap:wrap;gap:12px;flex:1;min-width:220px}
+.toolbar-hint{font-size:13px;color:#8a8191}
+.selection-tools .range-label{font-size:12px;margin:0;gap:6px;white-space:nowrap}
+.selection-tools [data-slot=slider]{width:70px;flex-shrink:0}
+.selection-tools .layer-buttons{margin:0;gap:5px}
+.selection-tools .reset{margin:0;font-size:0;padding:8px}
+.selection-tools .field{display:flex;align-items:center;gap:8px;font-size:13px}
+.selection-tools .field textarea{width:170px;height:38px;min-height:38px;margin:0;resize:vertical;font-size:13px;line-height:18px}
+.layer-popover{width:280px;max-width:calc(100vw - 32px);padding:15px}
+.layer-popover .layers{padding:0;max-height:350px;overflow:auto}
+.layer-popover .layers .eyebrow{display:none}
+.layer-popover .layers button{font-size:13px}
+.canvas-area{padding:30px 32px 48px;justify-content:safe center;align-items:safe center;min-height:0}
+.documentbar,.canvas-footer{flex-shrink:0}
+@media(min-width:1500px){.workspace{grid-template-columns:minmax(0,1fr) 390px}}
+@media(max-width:1150px){.workspace{grid-template-columns:minmax(0,1fr) 310px}.editor-toolbar{padding:10px 16px}.selection-tools{flex-basis:100%}.canvas-area{padding:25px 20px 45px}.toolbar-hint{font-size:12px}}
+@media(max-width:760px){.workspace{display:flex;height:auto;min-height:0}.library{border-left:0;border-top:1px solid var(--border);order:1}.canvas-area{min-height:540px;padding:25px 16px 45px}.editor-toolbar{gap:8px;padding:10px 14px}.selection-tools{gap:10px}.selection-tools .field{flex-basis:100%}.selection-tools .field textarea{flex:1}.toolbar-hint{font-size:12px}.canvas-caption{font-size:10px}.board-wrap{zoom:.8}}

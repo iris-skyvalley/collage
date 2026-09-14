@@ -23,6 +23,12 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverTitle,
+} from '@/components/ui/popover';
 import { products, initial, textMetrics, type Piece } from './collage';
 export default function Home() {
   const [pieces, setPieces] = useState<Piece[]>(initial),
@@ -229,89 +235,6 @@ export default function Home() {
         </div>
       </header>
       <div className="workspace">
-        <aside className="library">
-          <div className="library-head">
-            <div className="eyebrow">YOUR NEXT GREAT LOOK</div>
-            <h1>It starts with a piece.</h1>
-            <p>Find something you love. Make it yours.</p>
-          </div>
-          <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
-            <TabsList className="library-tabs" variant="line">
-              <TabsTrigger value="pieces">The edit</TabsTrigger>
-              <TabsTrigger value="text">Typography</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {
-            <>
-              <label className="search">
-                <Search size={17} />
-                <input
-                  placeholder="Find your next favorite"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-                <kbd>⌕</kbd>
-              </label>
-              <div className={tab === 'text' ? 'filters hidden' : 'filters'}>
-                {[
-                  'All pieces',
-                  'Clothing',
-                  'Magazine',
-                  'Objects',
-                  'Bags',
-                  'Shoes',
-                  'Accessories',
-                ].map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setCategory(c)}
-                    className={category === c ? 'active' : ''}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-              <div className="catalog-heading">
-                <span>{query ? 'SEARCH RESULTS' : 'THE SCRAPBOOK EDIT'}</span>
-                <span>{shown.length} pieces</span>
-              </div>
-              <div className="products">
-                {shown.map((p, i) => (
-                  <button
-                    className="product"
-                    key={p.id}
-                    onClick={() => add(p.id)}
-                    draggable
-                    onDragStart={(e) => e.dataTransfer.setData('product', p.id)}
-                  >
-                    <div className={'product-image tone-' + i}>
-                      {p.text ? (
-                        <span className={'type-sample ' + p.style}>
-                          {p.text}
-                        </span>
-                      ) : (
-                        <img src={'/pieces/' + p.id + '.png'} alt={p.name} />
-                      )}
-                      <span className="add">
-                        <Plus size={15} />
-                      </span>
-                    </div>
-                    <strong>{p.name}</strong>
-                    <small>{p.detail}</small>
-                  </button>
-                ))}
-              </div>
-              {!shown.length && (
-                <p className="empty">
-                  No pieces found. Try a different search.
-                </p>
-              )}
-            </>
-          }
-          <div className="library-footer">
-            <Move size={15} /> Click or drag a piece onto your canvas.
-          </div>
-        </aside>
         <section className="worktable">
           <div className="documentbar">
             <div>
@@ -344,7 +267,8 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="canvas-area">
+          <div className="editor-toolbar" aria-label="Collage editing tools">
+            {' '}
             <div className="toolrail">
               <button
                 className={!current?.text ? 'chosen' : ''}
@@ -393,6 +317,109 @@ export default function Home() {
                 <Trash2 size={18} />
               </button>
             </div>
+            <Popover>
+              <PopoverTrigger className="layers-toggle">
+                <Layers size={17} /> Layers
+              </PopoverTrigger>
+              <PopoverContent align="start" className="layer-popover">
+                <PopoverTitle>On your canvas</PopoverTitle>{' '}
+                <div className="layers">
+                  <div className="eyebrow">
+                    ON YOUR CANVAS <span>{pieces.length}</span>
+                  </div>
+                  {[...pieces].reverse().map((p) => (
+                    <button
+                      key={p.id}
+                      className={selected === p.id ? 'active' : ''}
+                      onClick={() => setSelected(p.id)}
+                    >
+                      {p.text ? (
+                        <Type size={22} />
+                      ) : (
+                        <img src={'/pieces/' + p.product + '.png'} alt="" />
+                      )}
+                      <span>
+                        {p.text ||
+                          products.find((x) => x.id === p.product)?.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <div className="selection-tools">
+              {current ? (
+                <>
+                  {' '}
+                  {current.text !== undefined && (
+                    <label className="field">
+                      Text
+                      <textarea
+                        rows={3}
+                        value={current.text}
+                        onChange={(e) => patch({ text: e.target.value })}
+                      />
+                    </label>
+                  )}
+                  <label className="range-label">
+                    Size <span>{Math.round(current.w)} px</span>
+                  </label>
+                  <Slider
+                    aria-label="Piece size"
+                    value={[current.w]}
+                    min={60}
+                    max={600}
+                    onValueChange={(v) => {
+                      const w = Array.isArray(v) ? v[0] : v;
+                      patch({ w, h: (current.h * w) / current.w });
+                    }}
+                  />
+                  <label className="range-label">
+                    Rotation <span>{current.r}°</span>
+                  </label>
+                  <Slider
+                    aria-label="Piece rotation"
+                    value={[current.r]}
+                    min={-180}
+                    max={180}
+                    onValueChange={(v) =>
+                      patch({ r: Array.isArray(v) ? v[0] : v })
+                    }
+                  />
+                  <div className="layer-buttons">
+                    <button
+                      onClick={() =>
+                        commit([
+                          current,
+                          ...pieces.filter((p) => p.id !== selected),
+                        ])
+                      }
+                    >
+                      <ArrowDown size={15} /> To back
+                    </button>
+                    <button
+                      onClick={() =>
+                        commit([
+                          ...pieces.filter((p) => p.id !== selected),
+                          current,
+                        ])
+                      }
+                    >
+                      <ArrowUp size={15} /> To front
+                    </button>
+                  </div>
+                  <button className="reset" onClick={() => patch({ r: 0 })}>
+                    <RotateCcw size={15} /> Reset rotation
+                  </button>
+                </>
+              ) : (
+                <span className="toolbar-hint">
+                  Select a piece to resize, rotate, or arrange it.
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="canvas-area">
             <div
               className="board-wrap"
               style={{ width: (600 * zoom) / 100, height: (700 * zoom) / 100 }}
@@ -400,7 +427,10 @@ export default function Home() {
               <div
                 ref={canvas}
                 className="board"
-                style={{ background: '#ffffff', transform: `scale(${zoom / 100})` }}
+                style={{
+                  background: '#ffffff',
+                  transform: `scale(${zoom / 100})`,
+                }}
                 onPointerDown={(e) => {
                   if (e.target === e.currentTarget) setSelected(null);
                 }}
@@ -569,123 +599,87 @@ export default function Home() {
             </div>
           </footer>
         </section>
-        <aside className="inspector">
-          <div className="inspector-title">
-            <Layers size={17} />
-            <h2>{current ? 'Make it yours' : 'The details'}</h2>
+        <aside className="library">
+          <div className="library-head">
+            <div className="eyebrow">YOUR NEXT GREAT LOOK</div>
+            <h1>It starts with a piece.</h1>
+            <p>Find something you love. Make it yours.</p>
           </div>
-          {current ? (
+          <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
+            <TabsList className="library-tabs" variant="line">
+              <TabsTrigger value="pieces">The edit</TabsTrigger>
+              <TabsTrigger value="text">Typography</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {
             <>
-              <div className="selection-preview">
-                {current.text ? (
-                  <Type size={40} />
-                ) : (
-                  <img
-                    src={'/pieces/' + current.product + '.png'}
-                    alt="Selected piece"
-                  />
-                )}
+              <label className="search">
+                <Search size={17} />
+                <input
+                  placeholder="Find your next favorite"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <kbd>⌕</kbd>
+              </label>
+              <div className={tab === 'text' ? 'filters hidden' : 'filters'}>
+                {[
+                  'All pieces',
+                  'Clothing',
+                  'Magazine',
+                  'Objects',
+                  'Bags',
+                  'Shoes',
+                  'Accessories',
+                ].map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCategory(c)}
+                    className={category === c ? 'active' : ''}
+                  >
+                    {c}
+                  </button>
+                ))}
               </div>
-              <h3>
-                {current.text
-                  ? 'Your typography'
-                  : products.find((p) => p.id === current.product)?.name}
-              </h3>
-              {current.text && (
-                <label className="field">
-                  Text
-                  <textarea
-                    rows={3}
-                    value={current.text}
-                    onChange={(e) => patch({ text: e.target.value })}
-                  />
-                </label>
+              <div className="catalog-heading">
+                <span>{query ? 'SEARCH RESULTS' : 'THE SCRAPBOOK EDIT'}</span>
+                <span>{shown.length} pieces</span>
+              </div>
+              <div className="products">
+                {shown.map((p, i) => (
+                  <button
+                    className="product"
+                    key={p.id}
+                    onClick={() => add(p.id)}
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData('product', p.id)}
+                  >
+                    <div className={'product-image tone-' + i}>
+                      {p.text ? (
+                        <span className={'type-sample ' + p.style}>
+                          {p.text}
+                        </span>
+                      ) : (
+                        <img src={'/pieces/' + p.id + '.png'} alt={p.name} />
+                      )}
+                      <span className="add">
+                        <Plus size={15} />
+                      </span>
+                    </div>
+                    <strong>{p.name}</strong>
+                    <small>{p.detail}</small>
+                  </button>
+                ))}
+              </div>
+              {!shown.length && (
+                <p className="empty">
+                  No pieces found. Try a different search.
+                </p>
               )}
-              <label className="range-label">
-                Size <span>{Math.round(current.w)} px</span>
-              </label>
-              <Slider
-                aria-label="Piece size"
-                value={[current.w]}
-                min={60}
-                max={600}
-                onValueChange={(v) => {
-                  const w = Array.isArray(v) ? v[0] : v;
-                  patch({ w, h: (current.h * w) / current.w });
-                }}
-              />
-              <label className="range-label">
-                Rotation <span>{current.r}°</span>
-              </label>
-              <Slider
-                aria-label="Piece rotation"
-                value={[current.r]}
-                min={-180}
-                max={180}
-                onValueChange={(v) => patch({ r: Array.isArray(v) ? v[0] : v })}
-              />
-              <div className="layer-buttons">
-                <button
-                  onClick={() =>
-                    commit([
-                      current,
-                      ...pieces.filter((p) => p.id !== selected),
-                    ])
-                  }
-                >
-                  <ArrowDown size={15} /> To back
-                </button>
-                <button
-                  onClick={() =>
-                    commit([
-                      ...pieces.filter((p) => p.id !== selected),
-                      current,
-                    ])
-                  }
-                >
-                  <ArrowUp size={15} /> To front
-                </button>
-              </div>
-              <button className="reset" onClick={() => patch({ r: 0 })}>
-                <RotateCcw size={15} /> Reset rotation
-              </button>
             </>
-          ) : (
-            <div className="selection-hint">
-              <MousePointer2 size={25} />
-              <p>
-                Select a piece to give it
-                <br />
-                your personal touch.
-              </p>
-            </div>
-          )}
-          <div className="layers">
-            <div className="eyebrow">
-              ON YOUR CANVAS <span>{pieces.length}</span>
-            </div>
-            {[...pieces].reverse().map((p) => (
-              <button
-                key={p.id}
-                className={selected === p.id ? 'active' : ''}
-                onClick={() => setSelected(p.id)}
-              >
-                {p.text ? (
-                  <Type size={22} />
-                ) : (
-                  <img src={'/pieces/' + p.product + '.png'} alt="" />
-                )}
-                <span>
-                  {p.text || products.find((x) => x.id === p.product)?.name}
-                </span>
-              </button>
-            ))}
-          </div>
-          <div className="studio-note">
-            A good outfit is a feeling.
-            <br />
-            <em>Follow yours.</em>
-            <span>muse ✳</span>
+          }
+          <div className="library-footer">
+            <Move size={15} /> Click or drag a piece onto your canvas.
           </div>
         </aside>
       </div>
