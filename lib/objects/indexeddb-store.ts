@@ -14,6 +14,7 @@ const DB_VERSION = 1;
  *              index on objectIds — that index *is* used_in.
  */
 export class IndexedDbObjectStore implements ObjectStore {
+  readonly kind = 'indexeddb' as const;
   private db: Promise<IDBDatabase> | null = null;
 
   static available(): boolean {

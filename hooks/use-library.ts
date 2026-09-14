@@ -3,6 +3,7 @@ import type { ClipObject, Creation } from '@/lib/objects/schema';
 import { newId, now } from '@/lib/objects/schema';
 import { MemoryObjectStore, type ObjectStore } from '@/lib/objects/store';
 import { IndexedDbObjectStore } from '@/lib/objects/indexeddb-store';
+import { SupabaseObjectStore } from '@/lib/objects/supabase-store';
 import { FlatBackgroundCutter } from '@/lib/clip/cutout';
 import { ingestClip, isClipPayload, type ClipPayload } from '@/lib/clip/ingest';
 import type { Piece } from '@/app/collage';
@@ -22,8 +23,20 @@ function local(key: string, make: () => string): string {
   }
 }
 
-/** One store for the page. IndexedDB when the browser has it. */
-function makeStore(): ObjectStore {
+const supabaseEnv = {
+  url: import.meta.env.VITE_SUPABASE_URL as string | undefined,
+  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined,
+};
+
+/** The shared library when a Supabase project is configured. */
+function makeSharedStore(): ObjectStore | null {
+  return SupabaseObjectStore.configured(supabaseEnv)
+    ? new SupabaseObjectStore(supabaseEnv.url!, supabaseEnv.anonKey!)
+    : null;
+}
+
+/** The library in this browser: IndexedDB when the browser has it. */
+function makeLocalStore(): ObjectStore {
   return IndexedDbObjectStore.available()
     ? new IndexedDbObjectStore()
     : new MemoryObjectStore();
@@ -34,9 +47,13 @@ function makeStore(): ObjectStore {
  * creation currently on the canvas. Everything persists through the store.
  */
 export function useLibrary(pieces: Piece[], title: string) {
-  const store = useMemo(() => makeStore(), []);
+  // The shared store is preferred; if it cannot identify the user (project
+  // down, anonymous sign-in off) the library falls back to this browser.
+  const [store, setStore] = useState<ObjectStore>(
+    () => makeSharedStore() ?? makeLocalStore(),
+  );
+  const [creator, setCreator] = useState<string | null>(null);
   const cutter = useMemo(() => new FlatBackgroundCutter(), []);
-  const creator = useMemo(() => local(CREATOR_KEY, newId), []);
   const [objects, setObjects] = useState<ClipObject[]>([]);
   const [usage, setUsage] = useState<Record<string, number>>({});
   const [urls, setUrls] = useState<Record<string, string>>({});
@@ -52,7 +69,9 @@ export function useLibrary(pieces: Piece[], title: string) {
       list.map(async (o) => {
         if (next[o.id]) return;
         const ref = o.cutoutImage ?? o.originalImage;
-        if (ref.blobKey) {
+        if (ref.blobKey && store.blobUrl) {
+          next[o.id] = store.blobUrl(ref.blobKey);
+        } else if (ref.blobKey) {
           const blob = await store.getBlob(ref.blobKey);
           if (blob) next[o.id] = URL.createObjectURL(blob);
         } else if (ref.url) {
@@ -75,19 +94,37 @@ export function useLibrary(pieces: Piece[], title: string) {
     return saved ? (saved.pieces as Piece[]) : null;
   }, [store]);
 
+  // Identify the user for this store, then load the library. A shared store
+  // that cannot identify us is swapped for the local one.
   useEffect(() => {
-    refresh().catch(() => {});
+    let cancelled = false;
+    void (async () => {
+      try {
+        const id = store.whoAmI
+          ? await store.whoAmI()
+          : local(CREATOR_KEY, newId);
+        if (cancelled) return;
+        setCreator(id);
+        await refresh();
+      } catch {
+        if (cancelled || store.kind !== 'supabase') return;
+        console.warn('Offcut: shared library unavailable, using this browser.');
+        setStore(makeLocalStore());
+      }
+    })();
     return () => {
+      cancelled = true;
       for (const u of Object.values(urlsRef.current))
         if (u.startsWith('blob:')) URL.revokeObjectURL(u);
+      urlsRef.current = {};
     };
-  }, [refresh]);
+  }, [store, refresh]);
 
   // Autosave the canvas as a creation. Debounced, flushed when the tab goes
   // away, and never before hydration, or the demo layout would overwrite
   // what was saved.
   useEffect(() => {
-    if (!hydrated || !creationRef.current) return;
+    if (!hydrated || !creator || !creationRef.current) return;
     const { id, createdAt } = creationRef.current;
     let saved = false;
     const save = () => {
@@ -131,7 +168,10 @@ export function useLibrary(pieces: Piece[], title: string) {
 
   const clip = useCallback(
     async (payload: ClipPayload) => {
-      const object = await ingestClip(payload, store, cutter, creator);
+      const who =
+        creator ??
+        (store.whoAmI ? await store.whoAmI() : local(CREATOR_KEY, newId));
+      const object = await ingestClip(payload, store, cutter, who);
       await refresh();
       return object;
     },
@@ -162,7 +202,8 @@ export function useLibrary(pieces: Piece[], title: string) {
     loadCreation,
     startNewCreation,
     creator,
-    persistent: IndexedDbObjectStore.available(),
+    /** Where the library lives: shared, in this browser, or nowhere. */
+    kind: store.kind,
   };
 }
 

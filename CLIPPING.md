@@ -29,18 +29,41 @@ object; it is a query over creations (`usageCounts`, `usedIn`), so the count
 
 | Backend | File | Used when |
 | --- | --- | --- |
-| IndexedDB | `lib/objects/indexeddb-store.ts` | The static (Vercel) build. Library is per browser. |
-| D1 + R2 | `lib/objects/d1-store.ts`, `db/schema.sql` | Cloudflare, once the `d1` and `r2` bindings in `.openai/hosting.json` are set. Shared library, real network effects. |
+| Supabase | `lib/objects/supabase-store.ts`, `supabase/migrations/` | `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set. The shared library: everyone sees every object, you write only what is yours. |
+| IndexedDB | `lib/objects/indexeddb-store.ts` | No Supabase configured, or it could not sign the user in. Library is per browser. |
 | Memory | `lib/objects/store.ts` | Tests, server rendering. |
 
-The studio only talks to the interface (`hooks/use-library.ts`), so switching
-the library from "this browser" to "everyone" is a matter of handing it the D1
-store behind an API route. The D1 schema keeps the `used_in` edge in a
-`creation_objects` join table with an index on `object_id`.
+The studio only talks to the interface (`hooks/use-library.ts`). With
+Supabase the browser talks straight to Postgres and Storage; there is no API
+layer. Row level security does the ownership: objects, creations and their
+edges are publicly readable, and writable only by their `clipped_by` /
+`owner_id`, which is the Auth user id (anonymous sign-in is enough, enable it
+under Authentication → Providers). Image bytes go to the public `objects`
+bucket under `<user id>/<object id>/original|cutout`; the storage policies
+check that first folder against the caller.
+
+Two SQL functions do the work the interface needs atomically:
+`save_creation` upserts a creation and its `creation_objects` edges in one
+transaction, and `usage_counts` answers "used in N creations" for a batch.
+The `embedding` column is pgvector, any dimension, ready for an enricher.
 
 The collage on the canvas is autosaved as a Creation (debounced, flushed on
 `pagehide`). "New" leaves the current creation in the library and starts a
 fresh one, which is how an object accumulates uses.
+
+To set up a project:
+
+```sh
+cp .env.example .env.local      # fill in the project URL and anon key
+supabase link --project-ref <ref>
+supabase db push                # applies supabase/migrations
+```
+
+The migration and its policies were exercised against a local Postgres with
+stand-ins for `auth.uid()` and the storage schema: a second user can read and
+use your object but cannot edit, delete or forge it, cannot overwrite your
+creation, cannot upload into your folder, and a signed-out reader sees
+everything and writes nothing.
 
 ## Extraction
 

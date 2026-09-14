@@ -10,6 +10,13 @@ import { objectIdsOf } from './schema.ts';
  * shared one is a matter of handing it a different store.
  */
 export interface ObjectStore {
+  /** Which backend this is; the studio words its "saved" notice by it. */
+  readonly kind: 'memory' | 'indexeddb' | 'supabase';
+  /** Who the store thinks the user is. Absent for stores with no identity. */
+  whoAmI?(): Promise<string>;
+  /** A URL the browser can load a blob from directly, when the store has one. */
+  blobUrl?(key: string): string;
+
   putObject(object: ClipObject): Promise<void>;
   getObject(id: string): Promise<ClipObject | undefined>;
   /** Newest first. */
@@ -43,6 +50,7 @@ function byNewest<T extends { createdAt: string }>(a: T, b: T): number {
 
 /** In-memory store. Used by tests and as the server-side placeholder. */
 export class MemoryObjectStore implements ObjectStore {
+  readonly kind = 'memory' as const;
   private objects = new Map<string, ClipObject>();
   private blobs = new Map<string, Blob>();
   private creations = new Map<string, Creation>();

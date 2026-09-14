@@ -307,9 +307,11 @@ export default function Home() {
         <div className="header-right">
           <span className="session">
             <span />{' '}
-            {library.persistent
-              ? 'Saved in this browser as you go'
-              : 'A little space for your taste'}
+            {library.kind === 'supabase'
+              ? 'Saved to your library as you go'
+              : library.kind === 'indexeddb'
+                ? 'Saved in this browser as you go'
+                : 'A little space for your taste'}
           </span>
           <button
             className="header-button"

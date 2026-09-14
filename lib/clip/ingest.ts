@@ -58,6 +58,9 @@ async function measure(blob: Blob): Promise<{ width: number; height: number }> {
 /**
  * Turn a payload into a stored object: save the original, try to cut it out,
  * save the cutout, write the row. Returns the object as stored.
+ *
+ * Blob keys are <clipper>/<object id>/<original|cutout>: the first folder
+ * names the owner, which is what the storage policies check.
  */
 export async function ingestClip(
   payload: ClipPayload,
@@ -75,7 +78,7 @@ export async function ingestClip(
   if (payload.imageDataUrl) {
     originalBlob = await dataUrlToBlob(payload.imageDataUrl);
     const size = await measure(originalBlob);
-    const key = `objects/${id}/original`;
+    const key = `${clippedBy}/${id}/original`;
     await store.putBlob(key, originalBlob);
     original = {
       blobKey: key,
@@ -97,7 +100,7 @@ export async function ingestClip(
     try {
       const cut = await cutter.cut(originalBlob, payload.pick);
       if (cut) {
-        const key = `objects/${id}/cutout`;
+        const key = `${clippedBy}/${id}/cutout`;
         await store.putBlob(key, cut.blob);
         cutoutImage = {
           blobKey: key,

@@ -11,7 +11,7 @@ No environment variables or backend services are required for the collage editor
 
 The Vercel build uses the same `app/page.tsx`, collage data, styles, and product assets as the Sites build. It creates `dist-vercel/index.html`, static assets, and `dist-vercel/clip.js` (the clipper the bookmarklet loads into other sites; see `CLIPPING.md`) instead of a Cloudflare Worker. The ordinary `npm run build` remains the Sites/Cloudflare build.
 
-Clipped objects and the working collage are stored in the browser (IndexedDB). A shared library needs the Cloudflare D1 + R2 store: apply `db/schema.sql` and set the `d1` and `r2` bindings in `.openai/hosting.json`.
+Clipped objects and the working collage go to Supabase when `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in the Vercel project (apply `supabase/migrations` first and enable anonymous sign-in). Without them the library stays in the browser (IndexedDB). See `CLIPPING.md`.
 
 Validate locally:
 
