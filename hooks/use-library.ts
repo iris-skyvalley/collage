@@ -55,6 +55,16 @@ export function useLibrary(pieces: Piece[], title: string) {
   const [creator, setCreator] = useState<string | null>(null);
   /** Why the shared library was given up on, when it was. */
   const [fallback, setFallback] = useState<string | null>(null);
+  // Settles once the store has identified the user (or been swapped for the
+  // local one), so nothing writes to a store that is about to be given up on.
+  const [settled] = useState(() => {
+    let resolve = () => {};
+    const promise = new Promise<void>((r) => {
+      resolve = r;
+    });
+    return { promise, resolve };
+  });
+  const storeRef = useRef(store);
   const cutter = useMemo(() => new FlatBackgroundCutter(), []);
   const [objects, setObjects] = useState<ClipObject[]>([]);
   const [usage, setUsage] = useState<Record<string, number>>({});
@@ -96,6 +106,10 @@ export function useLibrary(pieces: Piece[], title: string) {
     return saved ? (saved.pieces as Piece[]) : null;
   }, [store]);
 
+  useEffect(() => {
+    storeRef.current = store;
+  }, [store]);
+
   // Identify the user for this store, then load the library. A shared store
   // that cannot identify us is swapped for the local one.
   useEffect(() => {
@@ -108,15 +122,20 @@ export function useLibrary(pieces: Piece[], title: string) {
         if (cancelled) return;
         setCreator(id);
         await refresh();
+        settled.resolve();
       } catch (e) {
-        if (cancelled || store.kind !== 'supabase') return;
+        if (cancelled) return;
+        if (store.kind !== 'supabase') {
+          settled.resolve();
+          return;
+        }
         const why = describeAuthFailure(e);
         console.warn(
           'Offcut: shared library unavailable, using this browser.',
           e,
         );
         setFallback(why);
-        setStore(makeLocalStore());
+        setStore(makeLocalStore()); // this effect runs again and settles
       }
     })();
     return () => {
@@ -175,14 +194,14 @@ export function useLibrary(pieces: Piece[], title: string) {
 
   const clip = useCallback(
     async (payload: ClipPayload) => {
-      const who =
-        creator ??
-        (store.whoAmI ? await store.whoAmI() : local(CREATOR_KEY, newId));
-      const object = await ingestClip(payload, store, cutter, who);
+      await settled.promise;
+      const s = storeRef.current;
+      const who = s.whoAmI ? await s.whoAmI() : local(CREATOR_KEY, newId);
+      const object = await ingestClip(payload, s, cutter, who);
       await refresh();
       return object;
     },
-    [store, cutter, creator, refresh],
+    [cutter, refresh],
   );
 
   const remove = useCallback(
@@ -252,10 +271,17 @@ export function useClipReceiver(onClip: (payload: ClipPayload) => void) {
   }, []);
 }
 
-/** Turn a Supabase auth error into a sentence that says what to fix. */
+/** Turn a Supabase error into a sentence that says what to fix. */
 function describeAuthFailure(e: unknown): string {
-  const status = (e as { status?: number } | null)?.status;
-  const message = e instanceof Error ? e.message : String(e);
+  const err = e as { status?: number; code?: string; message?: string } | null;
+  const status = err?.status;
+  const message = e instanceof Error ? e.message : (err?.message ?? String(e));
+  if (
+    status === 404 ||
+    err?.code === 'PGRST205' ||
+    /schema cache|bucket not found/i.test(message)
+  )
+    return 'The Supabase project has no Offcut tables yet: run supabase/migrations in the SQL editor. Saving in this browser instead.';
   if (status === 422 || /anonymous sign-ins are disabled/i.test(message))
     return 'Anonymous sign-ins are off in the Supabase project (Authentication → Sign In / Providers). Saving in this browser instead.';
   if (status === 401 || status === 403)
