@@ -144,7 +144,7 @@ export function useLibrary(pieces: Piece[], title: string) {
         if (u.startsWith('blob:')) URL.revokeObjectURL(u);
       urlsRef.current = {};
     };
-  }, [store, refresh]);
+  }, [store, refresh, settled]);
 
   // Autosave the canvas as a creation. Debounced, flushed when the tab goes
   // away, and never before hydration, or the demo layout would overwrite
