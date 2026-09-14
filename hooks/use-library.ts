@@ -53,6 +53,8 @@ export function useLibrary(pieces: Piece[], title: string) {
     () => makeSharedStore() ?? makeLocalStore(),
   );
   const [creator, setCreator] = useState<string | null>(null);
+  /** Why the shared library was given up on, when it was. */
+  const [fallback, setFallback] = useState<string | null>(null);
   const cutter = useMemo(() => new FlatBackgroundCutter(), []);
   const [objects, setObjects] = useState<ClipObject[]>([]);
   const [usage, setUsage] = useState<Record<string, number>>({});
@@ -106,9 +108,14 @@ export function useLibrary(pieces: Piece[], title: string) {
         if (cancelled) return;
         setCreator(id);
         await refresh();
-      } catch {
+      } catch (e) {
         if (cancelled || store.kind !== 'supabase') return;
-        console.warn('Offcut: shared library unavailable, using this browser.');
+        const why = describeAuthFailure(e);
+        console.warn(
+          'Offcut: shared library unavailable, using this browser.',
+          e,
+        );
+        setFallback(why);
         setStore(makeLocalStore());
       }
     })();
@@ -204,6 +211,7 @@ export function useLibrary(pieces: Piece[], title: string) {
     creator,
     /** Where the library lives: shared, in this browser, or nowhere. */
     kind: store.kind,
+    fallback,
   };
 }
 
@@ -242,6 +250,17 @@ export function useClipReceiver(onClip: (payload: ClipPayload) => void) {
     opener.postMessage({ type: 'offcut:ready', token }, '*');
     return () => life.abort();
   }, []);
+}
+
+/** Turn a Supabase auth error into a sentence that says what to fix. */
+function describeAuthFailure(e: unknown): string {
+  const status = (e as { status?: number } | null)?.status;
+  const message = e instanceof Error ? e.message : String(e);
+  if (status === 422 || /anonymous sign-ins are disabled/i.test(message))
+    return 'Anonymous sign-ins are off in the Supabase project (Authentication → Sign In / Providers). Saving in this browser instead.';
+  if (status === 401 || status === 403)
+    return 'The Supabase anon key was refused. Saving in this browser instead.';
+  return `The shared library did not answer (${message}). Saving in this browser instead.`;
 }
 
 export function formatPrice(o: ClipObject): string | undefined {

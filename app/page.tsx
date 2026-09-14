@@ -79,7 +79,10 @@ export default function Home() {
     a.addEventListener('click', swallow);
     return () => a.removeEventListener('click', swallow);
   }
-  const { loadCreation } = library;
+  const { loadCreation, fallback } = library;
+  useEffect(() => {
+    if (fallback) announce(fallback, 9000);
+  }, [fallback]);
   useEffect(() => {
     loadCreation()
       .then((saved) => {
@@ -166,9 +169,9 @@ export default function Home() {
     setPieces(future[0]);
     setFuture((f) => f.slice(1));
   }
-  function announce(s: string) {
+  function announce(s: string, ms = 2600) {
     setNotice(s);
-    setTimeout(() => setNotice(''), 2600);
+    setTimeout(() => setNotice(''), ms);
   }
   async function download() {
     try {
