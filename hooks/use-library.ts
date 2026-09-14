@@ -201,7 +201,7 @@ export function useLibrary(pieces: Piece[], title: string) {
       await refresh();
       return object;
     },
-    [cutter, refresh],
+    [cutter, refresh, settled],
   );
 
   const remove = useCallback(
