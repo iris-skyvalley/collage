@@ -200,3 +200,5 @@ body{font-size:16px}.filters button,.search input,.library-tabs button,.inspecto
 .clipped-empty strong{color:#584074;font-weight:600}
 @media(max-width:1150px){.header-button span{display:none}}
 @media(max-width:760px){.header-button{padding:9px 10px;font-size:12px}.header-right{gap:8px}}
+.selection-box{position:absolute;pointer-events:none;z-index:5}
+.selection-box .handle{pointer-events:auto}

@@ -65,6 +65,53 @@ export default function Home() {
     ox: number;
     oy: number;
   } | null>(null);
+  // Two-finger pinch: scale and rotate a piece around its centre.
+  const pinch = useRef<{
+    id: string;
+    dist: number;
+    angle: number;
+    w: number;
+    h: number;
+    r: number;
+    cx: number;
+    cy: number;
+  } | null>(null);
+  const touches = useRef(new Map<number, { x: number; y: number }>());
+  // Corner handle drag: scale a piece around its centre.
+  const resize = useRef<{
+    id: string;
+    dist: number;
+    w: number;
+    h: number;
+    cx: number;
+    cy: number;
+  } | null>(null);
+  /** Board units per screen pixel: the board is 600 wide whatever the zoom. */
+  function boardScale() {
+    return 600 / (canvas.current?.getBoundingClientRect().width || 600);
+  }
+  /** Where the pointer is in board coordinates. */
+  function boardPoint(e: { clientX: number; clientY: number }) {
+    const r = canvas.current?.getBoundingClientRect();
+    const k = boardScale();
+    return {
+      x: (e.clientX - (r?.left ?? 0)) * k,
+      y: (e.clientY - (r?.top ?? 0)) * k,
+    };
+  }
+  /** Resize around a fixed centre, keeping the aspect ratio, within limits. */
+  function scaled(
+    p: Piece,
+    w0: number,
+    h0: number,
+    cx: number,
+    cy: number,
+    k: number,
+  ) {
+    const w = Math.max(40, Math.min(600, w0 * k));
+    const h = (h0 * w) / w0;
+    return { ...p, w, h, x: cx - w / 2, y: cy - h / 2 };
+  }
   const current = pieces.find((p) => p.id === selected);
   const library = useLibrary(pieces, title);
   // React refuses javascript: hrefs; the bookmarklet is one by design. It is
@@ -610,8 +657,38 @@ export default function Home() {
                         onFocus={() => setSelected(p.id)}
                         onPointerDown={(e) => {
                           e.stopPropagation();
-                          e.currentTarget.setPointerCapture(e.pointerId);
+                          try {
+                            e.currentTarget.setPointerCapture(e.pointerId);
+                          } catch {}
                           setSelected(p.id);
+                          if (e.pointerType === 'touch') {
+                            touches.current.set(e.pointerId, {
+                              x: e.clientX,
+                              y: e.clientY,
+                            });
+                            const pts = [...touches.current.values()];
+                            if (pts.length === 2) {
+                              // Second finger: switch from moving to pinching.
+                              drag.current = null;
+                              pinch.current = {
+                                id: p.id,
+                                dist: Math.hypot(
+                                  pts[1].x - pts[0].x,
+                                  pts[1].y - pts[0].y,
+                                ),
+                                angle: Math.atan2(
+                                  pts[1].y - pts[0].y,
+                                  pts[1].x - pts[0].x,
+                                ),
+                                w: p.w,
+                                h: p.h,
+                                r: p.r,
+                                cx: p.x + p.w / 2,
+                                cy: p.y + p.h / 2,
+                              };
+                              return;
+                            }
+                          }
                           setHistory((h) => [...h, pieces]);
                           setFuture([]);
                           drag.current = {
@@ -623,6 +700,45 @@ export default function Home() {
                           };
                         }}
                         onPointerMove={(e) => {
+                          if (touches.current.has(e.pointerId))
+                            touches.current.set(e.pointerId, {
+                              x: e.clientX,
+                              y: e.clientY,
+                            });
+                          const z = pinch.current;
+                          if (z?.id === p.id && touches.current.size >= 2) {
+                            const pts = [...touches.current.values()];
+                            const dist = Math.hypot(
+                              pts[1].x - pts[0].x,
+                              pts[1].y - pts[0].y,
+                            );
+                            const angle = Math.atan2(
+                              pts[1].y - pts[0].y,
+                              pts[1].x - pts[0].x,
+                            );
+                            const r = Math.round(
+                              z.r + ((angle - z.angle) * 180) / Math.PI,
+                            );
+                            setPieces((ps) =>
+                              ps.map((x) =>
+                                x.id === p.id
+                                  ? {
+                                      ...scaled(
+                                        x,
+                                        z.w,
+                                        z.h,
+                                        z.cx,
+                                        z.cy,
+                                        dist / z.dist,
+                                      ),
+                                      r:
+                                        ((((r + 180) % 360) + 360) % 360) - 180,
+                                    }
+                                  : x,
+                              ),
+                            );
+                            return;
+                          }
                           const d = drag.current;
                           if (d?.id === p.id)
                             setPieces((ps) =>
@@ -655,11 +771,15 @@ export default function Home() {
                               ),
                             );
                         }}
-                        onPointerUp={() => {
+                        onPointerUp={(e) => {
+                          touches.current.delete(e.pointerId);
                           drag.current = null;
+                          if (touches.current.size < 2) pinch.current = null;
                         }}
-                        onPointerCancel={() => {
+                        onPointerCancel={(e) => {
+                          touches.current.delete(e.pointerId);
                           drag.current = null;
+                          if (touches.current.size < 2) pinch.current = null;
                         }}
                         onKeyDown={(e) => {
                           const dx =
@@ -698,16 +818,74 @@ export default function Home() {
                         ) : (
                           <img draggable={false} src={imageSrc(p)} alt="" />
                         )}
-                        {selected === p.id && (
-                          <>
-                            <i className="handle tl" />
-                            <i className="handle tr" />
-                            <i className="handle bl" />
-                            <i className="handle br" />
-                          </>
-                        )}
                       </div>
                     ))}
+                    {current &&
+                      !current.text && (
+                        // Handles live above every piece, so a covered corner is
+                        // still reachable. The box itself lets clicks through.
+                        <div
+                          className="selection-box"
+                          style={{
+                            left: current.x,
+                            top: current.y,
+                            width: current.w,
+                            height: current.h,
+                            transform: `rotate(${current.r}deg)`,
+                          }}
+                        >
+                          {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => (
+                            <i
+                              key={corner}
+                              className={'handle ' + corner}
+                              role="presentation"
+                              onPointerDown={(e) => {
+                                // A handle scales; the piece underneath must not move.
+                                e.stopPropagation();
+                                try {
+                                  e.currentTarget.setPointerCapture(
+                                    e.pointerId,
+                                  );
+                                } catch {}
+                                const cx = current.x + current.w / 2;
+                                const cy = current.y + current.h / 2;
+                                const pt = boardPoint(e);
+                                setHistory((h) => [...h, pieces]);
+                                setFuture([]);
+                                resize.current = {
+                                  id: current.id,
+                                  dist: Math.hypot(pt.x - cx, pt.y - cy) || 1,
+                                  w: current.w,
+                                  h: current.h,
+                                  cx,
+                                  cy,
+                                };
+                              }}
+                              onPointerMove={(e) => {
+                                const rz = resize.current;
+                                if (rz?.id !== current.id) return;
+                                const pt = boardPoint(e);
+                                const k =
+                                  Math.hypot(pt.x - rz.cx, pt.y - rz.cy) /
+                                  rz.dist;
+                                setPieces((ps) =>
+                                  ps.map((x) =>
+                                    x.id === current.id
+                                      ? scaled(x, rz.w, rz.h, rz.cx, rz.cy, k)
+                                      : x,
+                                  ),
+                                );
+                              }}
+                              onPointerUp={() => {
+                                resize.current = null;
+                              }}
+                              onPointerCancel={() => {
+                                resize.current = null;
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
                     {pieces.length === 0 && (
                       <div className="blank">
                         <Sparkles />
