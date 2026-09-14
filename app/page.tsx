@@ -35,7 +35,7 @@ export default function Home() {
     [selected, setSelected] = useState<string | null>(null),
     [category, setCategory] = useState('All pieces'),
     [query, setQuery] = useState(''),
-    [title, setTitle] = useState('The art of getting dressed'),
+    [title] = useState('The art of getting dressed'),
     [zoom, setZoom] = useState(85),
     [notice, setNotice] = useState(''),
     [history, setHistory] = useState<Piece[][]>([]),
@@ -236,37 +236,6 @@ export default function Home() {
       </header>
       <div className="workspace">
         <section className="worktable">
-          <div className="documentbar">
-            <div>
-              <input
-                aria-label="Collage title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-              <span>
-                Personal collage <span className="dot">·</span> {pieces.length}{' '}
-                elements
-              </span>
-            </div>
-            <div className="history">
-              <button
-                aria-label="Undo"
-                title="Undo"
-                disabled={!history.length}
-                onClick={undo}
-              >
-                <Undo2 size={18} />
-              </button>
-              <button
-                aria-label="Redo"
-                title="Redo"
-                disabled={!future.length}
-                onClick={redo}
-              >
-                <Redo2 size={18} />
-              </button>
-            </div>
-          </div>
           <div className="editor-toolbar" aria-label="Collage editing tools">
             {' '}
             <div className="toolrail">
@@ -315,6 +284,24 @@ export default function Home() {
                 }}
               >
                 <Trash2 size={18} />
+              </button>
+            </div>
+            <div className="history">
+              <button
+                aria-label="Undo"
+                title="Undo"
+                disabled={!history.length}
+                onClick={undo}
+              >
+                <Undo2 size={18} />
+              </button>
+              <button
+                aria-label="Redo"
+                title="Redo"
+                disabled={!future.length}
+                onClick={redo}
+              >
+                <Redo2 size={18} />
               </button>
             </div>
             <Popover>
@@ -600,11 +587,6 @@ export default function Home() {
           </footer>
         </section>
         <aside className="library">
-          <div className="library-head">
-            <div className="eyebrow">YOUR NEXT GREAT LOOK</div>
-            <h1>It starts with a piece.</h1>
-            <p>Find something you love. Make it yours.</p>
-          </div>
           <Tabs value={tab} onValueChange={(v) => setTab(String(v))}>
             <TabsList className="library-tabs" variant="line">
               <TabsTrigger value="pieces">The edit</TabsTrigger>
