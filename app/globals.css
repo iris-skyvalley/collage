@@ -202,3 +202,11 @@ body{font-size:16px}.filters button,.search input,.library-tabs button,.inspecto
 @media(max-width:760px){.header-button{padding:9px 10px;font-size:12px}.header-right{gap:8px}}
 .selection-box{position:absolute;pointer-events:none;z-index:5}
 .selection-box .handle{pointer-events:auto}
+/* The rotation knob above a selected piece, and the readout while dragging. */
+.rotor{position:absolute;left:50%;top:-30px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#fff;border:1.5px solid #a180c6;cursor:grab;pointer-events:auto;touch-action:none}
+.rotor:active{cursor:grabbing}
+.rotor::before{content:'';position:absolute;left:50%;top:100%;width:1.5px;height:18px;margin-left:-.75px;background:#a180c6}
+.rotor::after{content:'';position:absolute;inset:-10px}
+.readout{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%) rotate(0deg);background:#29232f;color:#fff;font:12px/1 Arial,sans-serif;padding:5px 8px;border-radius:5px;white-space:nowrap;pointer-events:none}
+.selection-tools .reset{font-size:12px;padding:8px 10px}
+@media(pointer:coarse){.rotor{width:18px;height:18px;margin-left:-9px;top:-36px}}

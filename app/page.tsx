@@ -26,7 +26,6 @@ import {
   X,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Slider } from '@/components/ui/slider';
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -86,6 +85,24 @@ export default function Home() {
     cx: number;
     cy: number;
   } | null>(null);
+  // Rotation knob drag: the angle from the piece's centre to the pointer.
+  const rotate = useRef<{ id: string; cx: number; cy: number } | null>(null);
+  /** Which direct-manipulation gesture is live, for the readout. */
+  const [gesture, setGesture] = useState<'resize' | 'rotate' | null>(null);
+  /** Angle of a pointer around a centre, as the piece rotation it implies. */
+  function angleTo(
+    cx: number,
+    cy: number,
+    pt: { x: number; y: number },
+    snap: boolean,
+  ) {
+    let r = (Math.atan2(pt.y - cy, pt.x - cx) * 180) / Math.PI + 90;
+    r = ((((r + 180) % 360) + 360) % 360) - 180;
+    if (snap) r = Math.round(r / 15) * 15;
+    else
+      for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(r - s) < 3) r = s;
+    return Math.round(r === -180 ? 180 : r);
+  }
   /** Board units per screen pixel: the board is 600 wide whatever the zoom. */
   function boardScale() {
     return 600 / (canvas.current?.getBoundingClientRect().width || 600);
@@ -552,31 +569,6 @@ export default function Home() {
                           />
                         </label>
                       )}
-                      <label className="range-label">
-                        Size <span>{Math.round(current.w)} px</span>
-                      </label>
-                      <Slider
-                        aria-label="Piece size"
-                        value={[current.w]}
-                        min={60}
-                        max={600}
-                        onValueChange={(v) => {
-                          const w = Array.isArray(v) ? v[0] : v;
-                          patch({ w, h: (current.h * w) / current.w });
-                        }}
-                      />
-                      <label className="range-label">
-                        Rotation <span>{current.r}°</span>
-                      </label>
-                      <Slider
-                        aria-label="Piece rotation"
-                        value={[current.r]}
-                        min={-180}
-                        max={180}
-                        onValueChange={(v) =>
-                          patch({ r: Array.isArray(v) ? v[0] : v })
-                        }
-                      />
                       <div className="layer-buttons">
                         <button
                           onClick={() =>
@@ -599,13 +591,19 @@ export default function Home() {
                           <ArrowUp size={15} /> To front
                         </button>
                       </div>
-                      <button className="reset" onClick={() => patch({ r: 0 })}>
-                        <RotateCcw size={15} /> Reset rotation
+                      <button
+                        className="reset"
+                        disabled={current.r === 0}
+                        title="Rotate back to 0°"
+                        onClick={() => patch({ r: 0 })}
+                      >
+                        <RotateCcw size={15} /> Straighten
                       </button>
                     </>
                   ) : (
                     <span className="toolbar-hint">
-                      Select a piece to resize, rotate, or arrange it.
+                      Select a piece. Drag a corner to resize, the knob to
+                      rotate.
                     </span>
                   )}
                 </div>
@@ -852,6 +850,7 @@ export default function Home() {
                                 const pt = boardPoint(e);
                                 setHistory((h) => [...h, pieces]);
                                 setFuture([]);
+                                setGesture('resize');
                                 resize.current = {
                                   id: current.id,
                                   dist: Math.hypot(pt.x - cx, pt.y - cy) || 1,
@@ -878,12 +877,63 @@ export default function Home() {
                               }}
                               onPointerUp={() => {
                                 resize.current = null;
+                                setGesture(null);
                               }}
                               onPointerCancel={() => {
                                 resize.current = null;
+                                setGesture(null);
                               }}
                             />
                           ))}
+                          <i
+                            className="rotor"
+                            role="presentation"
+                            title="Drag to rotate; hold Shift for 15° steps"
+                            onPointerDown={(e) => {
+                              e.stopPropagation();
+                              try {
+                                e.currentTarget.setPointerCapture(e.pointerId);
+                              } catch {}
+                              setHistory((h) => [...h, pieces]);
+                              setFuture([]);
+                              setGesture('rotate');
+                              rotate.current = {
+                                id: current.id,
+                                cx: current.x + current.w / 2,
+                                cy: current.y + current.h / 2,
+                              };
+                            }}
+                            onPointerMove={(e) => {
+                              const rt = rotate.current;
+                              if (rt?.id !== current.id) return;
+                              const r = angleTo(
+                                rt.cx,
+                                rt.cy,
+                                boardPoint(e),
+                                e.shiftKey,
+                              );
+                              setPieces((ps) =>
+                                ps.map((x) =>
+                                  x.id === current.id ? { ...x, r } : x,
+                                ),
+                              );
+                            }}
+                            onPointerUp={() => {
+                              rotate.current = null;
+                              setGesture(null);
+                            }}
+                            onPointerCancel={() => {
+                              rotate.current = null;
+                              setGesture(null);
+                            }}
+                          />
+                          {gesture && (
+                            <span className="readout">
+                              {gesture === 'resize'
+                                ? `${Math.round(current.w)} × ${Math.round(current.h)}`
+                                : `${current.r}°`}
+                            </span>
+                          )}
                         </div>
                       )}
                     {pieces.length === 0 && (
