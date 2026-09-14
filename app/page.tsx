@@ -332,10 +332,17 @@ export default function Home() {
             <PopoverContent align="end" className="clipper-popover">
               <PopoverTitle>The clipper</PopoverTitle>
               <p>
-                Drag this to your bookmarks bar. On any product page, click it,
-                hover over a photo, and click: the object lands in your library
-                with its brand, price and retailer.
+                The clipper is a bookmark whose address is a bit of code. On any
+                product page, click it, hover over a photo, and click: the
+                object lands in your library with its brand, price and retailer.
               </p>
+              <ol>
+                <li>
+                  Show your bookmarks bar: <kbd>⌘⇧B</kbd> on a Mac,{' '}
+                  <kbd>Ctrl⇧B</kbd> elsewhere.
+                </li>
+                <li>Drag this button onto that bar:</li>
+              </ol>
               <a
                 ref={bookmarklet}
                 href="#clipper"
@@ -345,9 +352,31 @@ export default function Home() {
               >
                 <Scissors size={15} /> Clip to Offcut
               </a>
+              <p className="clipper-alt">
+                Can’t drag it? Copy the code, make a new bookmark by hand
+                (right-click the bookmarks bar → Add page), and paste the code
+                as its address.
+              </p>
+              <button
+                className="header-button"
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(
+                      bookmarkletFor(location.origin, import.meta.env.DEV),
+                    )
+                    .then(() =>
+                      announce('Copied. Paste it as a new bookmark’s address.'),
+                    )
+                    .catch(() =>
+                      announce('Could not copy. Drag the button instead.'),
+                    );
+                }}
+              >
+                <Copy size={15} /> Copy the clipper code
+              </button>
               <small>
                 Photos on a plain backdrop are cut out automatically. Sites with
-                a strict content policy can block the bookmarklet; a browser
+                a strict content policy can block bookmarklets; a browser
                 extension is the next step for those.
               </small>
             </PopoverContent>
