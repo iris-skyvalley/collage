@@ -1,4 +1,4 @@
-# Deploy Muse on Vercel
+# Deploy Offcut on Vercel
 
 Import `iris-skyvalley/collage` into Vercel. Use the repository root (the folder containing `package.json` and `vercel.json`) as the Root Directory.
 

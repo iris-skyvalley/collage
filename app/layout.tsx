@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Muse — The Collage Studio',
+  title: 'Offcut — The Collage Studio',
   description: 'A little space for your taste. Create fashion collages, arrange your favorite pieces, and export your look.',
 };
 

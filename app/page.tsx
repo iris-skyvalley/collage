@@ -227,7 +227,7 @@ export default function Home() {
     <main>
       <header className="topbar">
         <a className="logo" href="/">
-          muse<span>✳</span>
+          offcut<span>✳</span>
         </a>
         <span className="studio-label">THE COLLAGE STUDIO</span>
         <div className="header-right">
