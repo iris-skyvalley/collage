@@ -51,6 +51,19 @@ The collage on the canvas is autosaved as a Creation (debounced, flushed on
 `pagehide`). "New" leaves the current creation in the library and starts a
 fresh one, which is how an object accumulates uses.
 
+Identity starts invisible. On first visit the studio signs the browser in
+anonymously, so clipping works with no sign-up and the anonymous user owns
+what it clips. Autosave keeps writing under that identity. The **Save**
+button is where the account conversation happens: it writes the collage,
+then offers to keep the library by attaching an email to the same user
+(`auth.updateUser`), which keeps every clip and creation already made.
+"Sign in instead" sends a magic link (`signInWithOtp`) for someone who
+already claimed an account on another device. The auth client uses the
+implicit flow so a link opened on a different device still signs in.
+
+For the emails to land back in the studio, set the Site URL and add the
+deployed origin under Authentication → URL Configuration in Supabase.
+
 To set up a project:
 
 ```sh

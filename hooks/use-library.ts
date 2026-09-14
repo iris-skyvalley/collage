@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ClipObject, Creation } from '@/lib/objects/schema';
 import { newId, now } from '@/lib/objects/schema';
-import { MemoryObjectStore, type ObjectStore } from '@/lib/objects/store';
+import {
+  MemoryObjectStore,
+  type Identity,
+  type ObjectStore,
+} from '@/lib/objects/store';
 import { IndexedDbObjectStore } from '@/lib/objects/indexeddb-store';
 import { SupabaseObjectStore } from '@/lib/objects/supabase-store';
 import { FlatBackgroundCutter } from '@/lib/clip/cutout';
@@ -53,6 +57,7 @@ export function useLibrary(pieces: Piece[], title: string) {
     () => makeSharedStore() ?? makeLocalStore(),
   );
   const [creator, setCreator] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<Identity | null>(null);
   /** Why the shared library was given up on, when it was. */
   const [fallback, setFallback] = useState<string | null>(null);
   // Settles once the store has identified the user (or been swapped for the
@@ -121,6 +126,7 @@ export function useLibrary(pieces: Piece[], title: string) {
           : local(CREATOR_KEY, newId);
         if (cancelled) return;
         setCreator(id);
+        if (store.account) setIdentity(await store.account.get());
         await refresh();
         settled.resolve();
       } catch (e) {
@@ -146,34 +152,45 @@ export function useLibrary(pieces: Piece[], title: string) {
     };
   }, [store, refresh, settled]);
 
+  // When the account changes (claimed, or signed in elsewhere), the user id
+  // may change too: reload the library under the new identity.
+  useEffect(() => {
+    if (!store.account) return;
+    return store.account.onChange((who) => {
+      setIdentity(who);
+      setCreator(who.id);
+      refresh().catch(() => {});
+    });
+  }, [store, refresh]);
+
+  /** Write the canvas as a creation now. */
+  const saveNow = useCallback(async () => {
+    if (!creator || !creationRef.current) return;
+    const { id, createdAt } = creationRef.current;
+    const creation: Creation = {
+      id,
+      title,
+      ownerId: creator,
+      pieces,
+      objectIds: [],
+      createdAt,
+      updatedAt: now(),
+    };
+    await store.putCreation(creation);
+    const counts = await store.usageCounts(objects.map((o) => o.id));
+    setUsage(Object.fromEntries(counts.map((c) => [c.objectId, c.creations])));
+  }, [store, creator, title, pieces, objects]);
+
   // Autosave the canvas as a creation. Debounced, flushed when the tab goes
   // away, and never before hydration, or the demo layout would overwrite
   // what was saved.
   useEffect(() => {
-    if (!hydrated || !creator || !creationRef.current) return;
-    const { id, createdAt } = creationRef.current;
+    if (!hydrated || !creator) return;
     let saved = false;
     const save = () => {
       if (saved) return;
       saved = true;
-      const creation: Creation = {
-        id,
-        title,
-        ownerId: creator,
-        pieces,
-        objectIds: [],
-        createdAt,
-        updatedAt: now(),
-      };
-      store
-        .putCreation(creation)
-        .then(async () => {
-          const counts = await store.usageCounts(objects.map((o) => o.id));
-          setUsage(
-            Object.fromEntries(counts.map((c) => [c.objectId, c.creations])),
-          );
-        })
-        .catch(() => {});
+      saveNow().catch(() => {});
     };
     const t = setTimeout(save, 500);
     window.addEventListener('pagehide', save);
@@ -181,7 +198,7 @@ export function useLibrary(pieces: Piece[], title: string) {
       clearTimeout(t);
       window.removeEventListener('pagehide', save);
     };
-  }, [pieces, title, hydrated, store, creator, objects]);
+  }, [hydrated, creator, saveNow]);
 
   /** Leave the current creation in the library and start a fresh one. */
   const startNewCreation = useCallback(() => {
@@ -231,6 +248,10 @@ export function useLibrary(pieces: Piece[], title: string) {
     /** Where the library lives: shared, in this browser, or nowhere. */
     kind: store.kind,
     fallback,
+    saveNow,
+    identity,
+    /** Account actions, when the backend has accounts. */
+    account: store.account,
   };
 }
 

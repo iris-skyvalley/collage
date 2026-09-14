@@ -1,6 +1,11 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { ClipObject, Creation, UsageCount } from './schema.ts';
-import { normalizeCreation, type ObjectStore } from './store.ts';
+import {
+  normalizeCreation,
+  type Account,
+  type Identity,
+  type ObjectStore,
+} from './store.ts';
 
 const BUCKET = 'objects';
 
@@ -14,8 +19,59 @@ export class SupabaseObjectStore implements ObjectStore {
   private readonly client: SupabaseClient;
   private user: Promise<string> | null = null;
 
+  readonly account: Account;
+
   constructor(url: string, anonKey: string) {
-    this.client = createClient(url, anonKey);
+    // Implicit flow: a magic link opened on another device still signs in.
+    this.client = createClient(url, anonKey, {
+      auth: { flowType: 'implicit' },
+    });
+    const client = this.client;
+    const identity = (u: {
+      id: string;
+      email?: string;
+      is_anonymous?: boolean;
+    }): Identity => ({
+      id: u.id,
+      email: u.email || undefined,
+      anonymous: !!u.is_anonymous || !u.email,
+    });
+    this.account = {
+      get: async () => {
+        await this.whoAmI();
+        const { data } = await client.auth.getUser();
+        if (!data.user) throw new Error('Not signed in');
+        return identity(data.user);
+      },
+      claim: async (email) => {
+        const { error } = await client.auth.updateUser(
+          { email },
+          { emailRedirectTo: location.origin },
+        );
+        if (error) throw error;
+      },
+      signIn: async (email) => {
+        const { error } = await client.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: location.origin, shouldCreateUser: true },
+        });
+        if (error) throw error;
+      },
+      signOut: async () => {
+        await client.auth.signOut();
+        this.user = null;
+      },
+      onChange: (cb) => {
+        const { data } = client.auth.onAuthStateChange((event, session) => {
+          if (!session?.user) return;
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+            this.user = Promise.resolve(session.user.id);
+            cb(identity(session.user));
+          }
+        });
+        return () => data.subscription.unsubscribe();
+      },
+    };
   }
 
   static configured(env: { url?: string; anonKey?: string }): boolean {

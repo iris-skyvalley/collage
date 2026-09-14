@@ -9,11 +9,33 @@ import { objectIdsOf } from './schema.ts';
  * The app talks only to this interface, so moving from a local library to a
  * shared one is a matter of handing it a different store.
  */
+/** Who is using the store, as far as it can tell. */
+export type Identity = {
+  id: string;
+  email?: string;
+  /** True until the user has claimed the account with an email. */
+  anonymous: boolean;
+};
+
+/** Account operations, for stores that have accounts at all. */
+export interface Account {
+  get(): Promise<Identity>;
+  /** Attach an email to the current (anonymous) user, keeping its id. */
+  claim(email: string): Promise<void>;
+  /** Send a sign-in link to an existing account. */
+  signIn(email: string): Promise<void>;
+  signOut(): Promise<void>;
+  /** Called whenever the identity changes; returns an unsubscribe. */
+  onChange(cb: (identity: Identity) => void): () => void;
+}
+
 export interface ObjectStore {
   /** Which backend this is; the studio words its "saved" notice by it. */
   readonly kind: 'memory' | 'indexeddb' | 'supabase';
   /** Who the store thinks the user is. Absent for stores with no identity. */
   whoAmI?(): Promise<string>;
+  /** Accounts, when the backend has them. */
+  readonly account?: Account;
   /** A URL the browser can load a blob from directly, when the store has one. */
   blobUrl?(key: string): string;
 

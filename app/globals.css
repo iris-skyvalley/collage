@@ -210,3 +210,13 @@ body{font-size:16px}.filters button,.search input,.library-tabs button,.inspecto
 .readout{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%) rotate(0deg);background:#29232f;color:#fff;font:12px/1 Arial,sans-serif;padding:5px 8px;border-radius:5px;white-space:nowrap;pointer-events:none}
 .selection-tools .reset{font-size:12px;padding:8px 10px}
 @media(pointer:coarse){.rotor{width:18px;height:18px;margin-left:-9px;top:-36px}}
+/* Save → account dialog. */
+.account-dialog{max-width:420px}
+.account-form{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.account-form label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b5363}
+.account-form input{border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:14px;outline:none}
+.account-form input:focus{border-color:#a08cc5}
+.account-actions{display:flex;gap:10px;align-items:center}
+.account-actions .export{gap:8px}
+.account-form small{font-size:12px;color:#8d8495}
+.account-form small button{color:#584074;text-decoration:underline;font-size:12px}

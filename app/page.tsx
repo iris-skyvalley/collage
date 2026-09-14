@@ -24,6 +24,8 @@ import {
   ExternalLink,
   FilePlus,
   X,
+  Save,
+  Mail,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -37,6 +39,12 @@ import {
   PopoverContent,
   PopoverTitle,
 } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { products, initial, textMetrics, type Piece } from './collage';
 import {
   useLibrary,
@@ -142,6 +150,52 @@ export default function Home() {
     const swallow = (e: Event) => e.preventDefault();
     a.addEventListener('click', swallow);
     return () => a.removeEventListener('click', swallow);
+  }
+  const [account, setAccount] = useState<'closed' | 'claim' | 'signin'>(
+    'closed',
+  );
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  /** Explicit save: write now, then offer an account to an anonymous user. */
+  function save() {
+    library
+      .saveNow()
+      .then(() => {
+        if (library.account && library.identity?.anonymous) setAccount('claim');
+        else if (library.identity?.email)
+          announce(`Saved to your library as ${library.identity.email}.`);
+        else if (library.kind === 'indexeddb')
+          announce('Saved in this browser. It stays on this device.');
+        else announce('Saved.');
+      })
+      .catch(() => announce('Could not save. Please try again.'));
+  }
+  function sendEmail() {
+    const address = email.trim();
+    if (!library.account || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) {
+      announce('That does not look like an email address.');
+      return;
+    }
+    setSending(true);
+    const action =
+      account === 'claim'
+        ? library.account.claim(address)
+        : library.account.signIn(address);
+    action
+      .then(() => {
+        setAccount('closed');
+        announce(
+          `Check ${address} for a link. Your library follows you once you click it.`,
+          6000,
+        );
+      })
+      .catch((e: unknown) =>
+        announce(
+          e instanceof Error ? e.message : 'Could not send the email.',
+          5000,
+        ),
+      )
+      .finally(() => setSending(false));
   }
   const { loadCreation, fallback } = library;
   useEffect(() => {
@@ -374,12 +428,21 @@ export default function Home() {
         <div className="header-right">
           <span className="session">
             <span />{' '}
-            {library.kind === 'supabase'
-              ? 'Saved to your library as you go'
-              : library.kind === 'indexeddb'
-                ? 'Saved in this browser as you go'
-                : 'A little space for your taste'}
+            {library.identity?.email
+              ? library.identity.email
+              : library.kind === 'supabase'
+                ? 'Saving as you go'
+                : library.kind === 'indexeddb'
+                  ? 'Saving in this browser'
+                  : 'A little space for your taste'}
           </span>
+          <button
+            className="header-button"
+            title="Save this collage"
+            onClick={save}
+          >
+            <Save size={16} /> Save
+          </button>
           <button
             className="header-button"
             title="Start a new collage; this one stays in your library"
@@ -1100,6 +1163,69 @@ export default function Home() {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+      <Dialog
+        open={account !== 'closed'}
+        onOpenChange={(open) => !open && setAccount('closed')}
+      >
+        <DialogContent className="account-dialog">
+          <DialogTitle>
+            {account === 'claim' ? 'Keep your library' : 'Sign in'}
+          </DialogTitle>
+          <DialogDescription>
+            {account === 'claim'
+              ? 'This collage is saved. Add your email and everything you clip and make stays yours on any device, not just this browser.'
+              : 'We will email you a link. Click it and your library appears here.'}
+          </DialogDescription>
+          <form
+            className="account-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendEmail();
+            }}
+          >
+            <label>
+              Email
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </label>
+            <div className="account-actions">
+              <button type="submit" className="export" disabled={sending}>
+                <Mail size={15} />{' '}
+                {account === 'claim' ? 'Send me a link' : 'Email me a link'}
+              </button>
+              <button
+                type="button"
+                className="header-button"
+                onClick={() => setAccount('closed')}
+              >
+                Not now
+              </button>
+            </div>
+            <small>
+              {account === 'claim' ? (
+                <>
+                  Already have an account?{' '}
+                  <button type="button" onClick={() => setAccount('signin')}>
+                    Sign in instead
+                  </button>
+                </>
+              ) : (
+                <>
+                  New here?{' '}
+                  <button type="button" onClick={() => setAccount('claim')}>
+                    Keep this library with an email
+                  </button>
+                </>
+              )}
+            </small>
+          </form>
+        </DialogContent>
+      </Dialog>
       {notice && (
         <div className="toast" role="status">
           <Check size={16} />
