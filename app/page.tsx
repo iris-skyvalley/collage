@@ -78,6 +78,30 @@ export default function Home() {
     [future, setFuture] = useState<Piece[][]>([]),
     [tab, setTab] = useState('pieces');
   const canvas = useRef<HTMLDivElement>(null);
+  const area = useRef<HTMLDivElement>(null);
+  // Screen pixels per board unit at 100%: the board fills the canvas area.
+  const [fit, setFit] = useState(1);
+  useEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    const measure = () => {
+      const cs = getComputedStyle(el);
+      const w =
+        el.clientWidth -
+        parseFloat(cs.paddingLeft) -
+        parseFloat(cs.paddingRight);
+      const h =
+        el.clientHeight -
+        parseFloat(cs.paddingTop) -
+        parseFloat(cs.paddingBottom);
+      if (w > 0 && h > 0) setFit(Math.min(w / BOARD_W, h / BOARD_H));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const scale = (fit * zoom) / 100;
   const drag = useRef<{
     id: string;
     x: number;
@@ -591,7 +615,7 @@ export default function Home() {
         <ResizablePanelGroup orientation="horizontal" className="studio-panels">
           <ResizablePanel id="canvas-panel" defaultSize="72%" minSize="35%">
             <section className="worktable">
-              <div className="canvas-area">
+              <div className="canvas-area" ref={area}>
                 <ContextMenu
                   open={menuOpen}
                   onOpenChange={(o) => setMenuOpen(o && !!current)}
@@ -599,8 +623,8 @@ export default function Home() {
                   <ContextMenuTrigger
                     className="board-wrap"
                     style={{
-                      width: (BOARD_W * zoom) / 100,
-                      height: (BOARD_H * zoom) / 100,
+                      width: BOARD_W * scale,
+                      height: BOARD_H * scale,
                     }}
                   >
                     <div
@@ -608,7 +632,7 @@ export default function Home() {
                       className="board"
                       style={{
                         background: '#ffffff',
-                        transform: `scale(${zoom / 100})`,
+                        transform: `scale(${scale})`,
                       }}
                       onPointerDown={(e) => {
                         if (e.target === e.currentTarget) setSelected(null);
