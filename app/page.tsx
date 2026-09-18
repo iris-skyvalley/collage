@@ -611,7 +611,7 @@ export default function Home() {
       </header>
       <div className="workspace">
         <ResizablePanelGroup orientation="horizontal" className="studio-panels">
-          <ResizablePanel id="canvas-panel" defaultSize="72%" minSize="35%">
+          <ResizablePanel id="canvas-panel" defaultSize="64%" minSize="35%">
             <section className="worktable">
               <div className="canvas-area" ref={area}>
                 <ContextMenu
@@ -1010,7 +1010,7 @@ export default function Home() {
           />
           <ResizablePanel
             id="catalog-panel"
-            defaultSize="28%"
+            defaultSize="36%"
             minSize="250px"
             maxSize="60%"
           >
