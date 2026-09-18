@@ -175,27 +175,6 @@ export default function Home() {
   const current = pieces.find((p) => p.id === selected);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editingText, setEditingText] = useState(false);
-  function toBack() {
-    if (current) commit([current, ...pieces.filter((p) => p.id !== selected)]);
-  }
-  function toFront() {
-    if (current) commit([...pieces.filter((p) => p.id !== selected), current]);
-  }
-  function duplicate() {
-    if (!current) return;
-    const n = {
-      ...current,
-      id: crypto.randomUUID(),
-      x: current.x + 20,
-      y: current.y + 20,
-    };
-    commit([...pieces, n]);
-    setSelected(n.id);
-  }
-  function remove() {
-    commit(pieces.filter((p) => p.id !== selected));
-    setSelected(null);
-  }
   const library = useLibrary(pieces, title);
   // React refuses javascript: hrefs; the bookmarklet is one by design. It is
   // for dragging to the bookmarks bar, so a click in the studio is a no-op.
@@ -313,6 +292,27 @@ export default function Home() {
   }
   function patch(v: Partial<Piece>) {
     commit(pieces.map((p) => (p.id === selected ? { ...p, ...v } : p)));
+  }
+  function toBack() {
+    if (current) commit([current, ...pieces.filter((p) => p.id !== selected)]);
+  }
+  function toFront() {
+    if (current) commit([...pieces.filter((p) => p.id !== selected), current]);
+  }
+  function duplicate() {
+    if (!current) return;
+    const n = {
+      ...current,
+      id: crypto.randomUUID(),
+      x: current.x + 20,
+      y: current.y + 20,
+    };
+    commit([...pieces, n]);
+    setSelected(n.id);
+  }
+  function remove() {
+    commit(pieces.filter((p) => p.id !== selected));
+    setSelected(null);
   }
   function add(id: string) {
     const product = products.find((p) => p.id === id);

@@ -239,3 +239,12 @@ body{font-size:16px}.filters button,.search input,.library-tabs button,.inspecto
 .text-dialog textarea{width:100%;margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:6px;font:italic 18px Georgia,serif;resize:vertical}
 .library{padding-top:10px}
 @media(max-width:760px){.header-icons{order:-1}}
+/* Desktop: the page is exactly one viewport tall; only the library scrolls. */
+html,body{height:100%}
+@media(min-width:761px){
+body{overflow:hidden}
+main{height:100dvh;display:flex;flex-direction:column}
+.topbar{flex-shrink:0}
+.workspace{flex:1;height:auto;min-height:0}
+.canvas-area{overflow:hidden}
+}
