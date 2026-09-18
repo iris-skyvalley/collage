@@ -67,7 +67,7 @@ export default function Home() {
     [category, setCategory] = useState(''),
     [query, setQuery] = useState(''),
     [title] = useState('The art of getting dressed'),
-    [zoom, setZoom] = useState(85),
+    [zoom, setZoom] = useState(100),
     [notice, setNotice] = useState(''),
     [history, setHistory] = useState<Piece[][]>([]),
     [future, setFuture] = useState<Piece[][]>([]),
@@ -1013,9 +1013,6 @@ export default function Home() {
                     )}
                   </div>
                 </div>
-                <span className="canvas-caption">
-                  NO RULES. JUST YOUR POINT OF VIEW.
-                </span>
               </div>
               <footer className="canvas-footer">
                 <span>
@@ -1035,7 +1032,7 @@ export default function Home() {
                   >
                     <Plus size={16} />
                   </button>
-                  <button className="fit" onClick={() => setZoom(85)}>
+                  <button className="fit" onClick={() => setZoom(100)}>
                     Fit
                   </button>
                 </div>
