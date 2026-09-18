@@ -17,21 +17,43 @@ export type Product = {
   text?: string;
   style?: Piece['style'];
 };
-/** Library filters, each with the catalog piece that pictures it. */
-export const categories: [name: string, picture: string][] = [
-  ['All pieces', 'jacket'],
-  ['Clothing', 'tank'],
-  ['Magazine', 'newsprint'],
-  ['Objects', 'rose'],
-  ['Bags', 'bag'],
-  ['Shoes', 'shoes'],
-  ['Accessories', 'earrings'],
+/** Library filters, in the two groups the panel shows, each with a picture. */
+export type Category = { name: string; picture: string };
+export const categoryGroups: { title: string; items: Category[] }[] = [
+  {
+    title: 'Browse',
+    items: [
+      { name: 'Tops', picture: '/pieces/tank.png' },
+      { name: 'Outerwear', picture: '/pieces/jacket.png' },
+      { name: 'Dresses', picture: '/categories/dresses.png' },
+      { name: 'Jeans', picture: '/pieces/jeans.png' },
+      { name: 'Pants', picture: '/categories/pants.png' },
+      { name: 'Skirts', picture: '/categories/skirts.png' },
+      { name: 'Shorts', picture: '/categories/shorts.png' },
+      { name: 'Shoes', picture: '/pieces/shoes.png' },
+      { name: 'Bags', picture: '/pieces/bag.png' },
+      { name: 'Accessories', picture: '/categories/accessories.png' },
+      { name: 'Jewelry', picture: '/pieces/earrings.png' },
+    ],
+  },
+  {
+    title: 'Embellishments',
+    items: [
+      { name: 'Magazines', picture: '/pieces/newsprint.png' },
+      { name: 'People & print', picture: '/pieces/sculpture.png' },
+      { name: 'Background', picture: '/pieces/architecture.png' },
+      { name: 'Text', picture: '/categories/text.png' },
+      { name: 'Frames & borders', picture: '/pieces/frame.png' },
+      { name: 'Effects & textures', picture: '/categories/effects.png' },
+      { name: 'Patterns & overlays', picture: '/categories/patterns.png' },
+    ],
+  },
 ];
 export const products: Product[] = [
   {
     id: 'newsprint',
     name: 'A page from the archive',
-    category: 'Magazine',
+    category: 'Magazines',
     detail: 'Vintage newsprint · Background',
     w: 260,
     h: 319,
@@ -39,7 +61,7 @@ export const products: Product[] = [
   {
     id: 'architecture',
     name: 'A morning in Paris',
-    category: 'Magazine',
+    category: 'Background',
     detail: 'Monochrome · Photo clipping',
     w: 245,
     h: 181,
@@ -47,7 +69,7 @@ export const products: Product[] = [
   {
     id: 'sculpture',
     name: 'An eye for the classics',
-    category: 'Magazine',
+    category: 'People & print',
     detail: 'Marble study · Photo clipping',
     w: 170,
     h: 255,
@@ -55,7 +77,7 @@ export const products: Product[] = [
   {
     id: 'rose',
     name: 'A single red rose',
-    category: 'Objects',
+    category: 'Patterns & overlays',
     detail: 'Scarlet · Cutout',
     w: 145,
     h: 102,
@@ -63,7 +85,7 @@ export const products: Product[] = [
   {
     id: 'frame',
     name: 'Something from the flea market',
-    category: 'Objects',
+    category: 'Frames & borders',
     detail: 'Antique gold · Open frame',
     w: 180,
     h: 241,
@@ -72,7 +94,7 @@ export const products: Product[] = [
   {
     id: 'jacket',
     name: 'The worn-in leather jacket',
-    category: 'Clothing',
+    category: 'Outerwear',
     detail: 'Chocolate · Outerwear',
     w: 260,
     h: 310,
@@ -80,7 +102,7 @@ export const products: Product[] = [
   {
     id: 'tank',
     name: 'Everyday white tank',
-    category: 'Clothing',
+    category: 'Tops',
     detail: 'Chalk · Essentials',
     w: 140,
     h: 190,
@@ -88,7 +110,7 @@ export const products: Product[] = [
   {
     id: 'jeans',
     name: 'Perfectly lived-in denim',
-    category: 'Clothing',
+    category: 'Jeans',
     detail: 'Indigo · Straight leg',
     w: 190,
     h: 340,
@@ -112,7 +134,7 @@ export const products: Product[] = [
   {
     id: 'earrings',
     name: 'Green crystal earrings',
-    category: 'Accessories',
+    category: 'Jewelry',
     detail: 'Emerald · Finishing touches',
     w: 85,
     h: 130,
@@ -120,7 +142,7 @@ export const products: Product[] = [
   {
     id: 'headline',
     name: 'The art of getting dressed',
-    category: 'Typography',
+    category: 'Text',
     detail: 'Red ink · Editable headline',
     w: 210,
     h: 100,
@@ -130,7 +152,7 @@ export const products: Product[] = [
   {
     id: 'signature',
     name: 'Romantic handwriting',
-    category: 'Typography',
+    category: 'Text',
     detail: 'Italic serif · Editable text',
     w: 270,
     h: 65,
@@ -140,7 +162,7 @@ export const products: Product[] = [
   {
     id: 'caption',
     name: 'Magazine caption',
-    category: 'Typography',
+    category: 'Text',
     detail: 'Small type · Editable caption',
     w: 180,
     h: 40,

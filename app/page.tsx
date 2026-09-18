@@ -52,7 +52,7 @@ import {
   BOARD_W,
   BOARD_H,
   type Piece,
-  categories,
+  categoryGroups,
 } from './collage';
 import {
   useLibrary,
@@ -64,7 +64,7 @@ import type { ClipObject } from '@/lib/objects/schema';
 export default function Home() {
   const [pieces, setPieces] = useState<Piece[]>(initial),
     [selected, setSelected] = useState<string | null>(null),
-    [category, setCategory] = useState('All pieces'),
+    [category, setCategory] = useState(''),
     [query, setQuery] = useState(''),
     [title] = useState('The art of getting dressed'),
     [zoom, setZoom] = useState(85),
@@ -421,9 +421,10 @@ export default function Home() {
   const shown = products.filter(
     (p) =>
       (tab === 'text'
-        ? p.category === 'Typography'
-        : p.category !== 'Typography' &&
-          (category === 'All pieces' || p.category === category)) &&
+        ? p.category === 'Text'
+        : category
+          ? p.category === category
+          : p.category !== 'Text') &&
       (p.name + ' ' + p.detail).toLowerCase().includes(query.toLowerCase()),
   );
   return (
@@ -1095,26 +1096,36 @@ export default function Home() {
                     />
                     <kbd>⌕</kbd>
                   </label>
-                  <div
-                    className={tab === 'text' ? 'filters hidden' : 'filters'}
-                  >
-                    {categories.map(([c, pic]) => (
-                      <button
-                        key={c}
-                        onClick={() => setCategory(c)}
-                        className={category === c ? 'active' : ''}
-                        aria-pressed={category === c}
-                      >
-                        <span className="filter-image">
-                          <img src={'/pieces/' + pic + '.png'} alt="" />
-                        </span>
-                        <span>{c}</span>
-                      </button>
+                  {tab !== 'text' &&
+                    categoryGroups.map((g) => (
+                      <div className="filter-group" key={g.title}>
+                        <span className="eyebrow">{g.title}</span>
+                        <div className="filters">
+                          {g.items.map((c) => (
+                            <button
+                              key={c.name}
+                              onClick={() =>
+                                setCategory(category === c.name ? '' : c.name)
+                              }
+                              className={category === c.name ? 'active' : ''}
+                              aria-pressed={category === c.name}
+                            >
+                              <span className="filter-image">
+                                <img src={c.picture} alt="" />
+                              </span>
+                              <span>{c.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                  </div>
                   <div className="catalog-heading">
                     <span>
-                      {query ? 'SEARCH RESULTS' : 'THE SCRAPBOOK EDIT'}
+                      {query
+                        ? 'SEARCH RESULTS'
+                        : category
+                          ? category.toUpperCase()
+                          : 'THE SCRAPBOOK EDIT'}
                     </span>
                     <span>{shown.length} pieces</span>
                   </div>
@@ -1151,7 +1162,9 @@ export default function Home() {
                   </div>
                   {!shown.length && (
                     <p className="empty">
-                      No pieces found. Try a different search.
+                      {category && !query
+                        ? `Nothing in ${category.toLowerCase()} yet. Clip a piece from the web to add one.`
+                        : 'No pieces found. Try a different search.'}
                     </p>
                   )}
                 </>
