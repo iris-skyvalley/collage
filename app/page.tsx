@@ -13,7 +13,6 @@ import {
   Copy,
   ArrowUp,
   ArrowDown,
-  Minus,
   RotateCcw,
   Check,
   Move,
@@ -72,7 +71,6 @@ export default function Home() {
     [category, setCategory] = useState(''),
     [query, setQuery] = useState(''),
     [title] = useState('The art of getting dressed'),
-    [zoom, setZoom] = useState(100),
     [notice, setNotice] = useState(''),
     [history, setHistory] = useState<Piece[][]>([]),
     [future, setFuture] = useState<Piece[][]>([]),
@@ -101,7 +99,7 @@ export default function Home() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const scale = (fit * zoom) / 100;
+  const scale = fit;
   const drag = useRef<{
     id: string;
     x: number;
@@ -148,7 +146,7 @@ export default function Home() {
       for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(r - s) < 3) r = s;
     return Math.round(r === -180 ? 180 : r);
   }
-  /** Board units per screen pixel: the board is BOARD_W wide whatever the zoom. */
+  /** Board units per screen pixel: the board is BOARD_W wide whatever the scale. */
   function boardScale() {
     return BOARD_W / (canvas.current?.getBoundingClientRect().width || BOARD_W);
   }
@@ -1003,29 +1001,6 @@ export default function Home() {
                   </ContextMenuContent>
                 </ContextMenu>
               </div>
-              <footer className="canvas-footer">
-                <span>
-                  <span className="page-icon" /> Square · 1200 × 1200
-                </span>
-                <div>
-                  <button
-                    aria-label="Zoom out"
-                    onClick={() => setZoom((z) => Math.max(40, z - 10))}
-                  >
-                    <Minus size={16} />
-                  </button>
-                  <span>{zoom}%</span>
-                  <button
-                    aria-label="Zoom in"
-                    onClick={() => setZoom((z) => Math.min(110, z + 10))}
-                  >
-                    <Plus size={16} />
-                  </button>
-                  <button className="fit" onClick={() => setZoom(100)}>
-                    Fit
-                  </button>
-                </div>
-              </footer>
             </section>
           </ResizablePanel>
           <ResizableHandle
