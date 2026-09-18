@@ -59,6 +59,22 @@ export const products: Product[] = [
     h: 319,
   },
   {
+    id: 'magazine',
+    name: 'There is only one',
+    category: 'Magazines',
+    detail: 'Black & white · Feature page',
+    w: 220,
+    h: 327,
+  },
+  {
+    id: 'magazine1',
+    name: 'The way she wears it',
+    category: 'Magazines',
+    detail: 'Black & white · Headline page',
+    w: 240,
+    h: 315,
+  },
+  {
     id: 'architecture',
     name: 'A morning in Paris',
     category: 'Background',

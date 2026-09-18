@@ -42,3 +42,6 @@ Production build and TypeScript check. Browser interaction testing was not reque
 ]
 ## Category tiles
 `public/categories/*.png` are original illustrations drawn as SVG for this project and rendered to PNG (no external source). Categories that already have a catalog photo reuse it from `public/pieces/`.
+
+## Magazine pages
+`public/pieces/magazine.png` and `public/pieces/magazine1.png` are magazine page scans supplied by the project owner (converted from JPEG). Source and licensing not recorded.
