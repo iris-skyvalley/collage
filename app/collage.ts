@@ -4,6 +4,9 @@ import type { CreationPiece } from '@/lib/objects/schema';
  * piece is a clipped object (then `object` holds the ClipObject id).
  */
 export type Piece = CreationPiece;
+/** The board is square: 600 x 600 board units, exported at 2x as 1200 x 1200. */
+export const BOARD_W = 600;
+export const BOARD_H = 600;
 export type Product = {
   id: string;
   name: string;
@@ -14,6 +17,16 @@ export type Product = {
   text?: string;
   style?: Piece['style'];
 };
+/** Library filters, each with the catalog piece that pictures it. */
+export const categories: [name: string, picture: string][] = [
+  ['All pieces', 'jacket'],
+  ['Clothing', 'tank'],
+  ['Magazine', 'newsprint'],
+  ['Objects', 'rose'],
+  ['Bags', 'bag'],
+  ['Shoes', 'shoes'],
+  ['Accessories', 'earrings'],
+];
 export const products: Product[] = [
   {
     id: 'newsprint',
@@ -140,7 +153,7 @@ export const initial: Piece[] = [
     id: 'paper-top',
     product: 'newsprint',
     x: 319,
-    y: 24,
+    y: 18,
     w: 255,
     h: 313,
     r: 4,
@@ -149,7 +162,7 @@ export const initial: Piece[] = [
     id: 'paper-bottom',
     product: 'newsprint',
     x: 373,
-    y: 358,
+    y: 279,
     w: 202,
     h: 248,
     r: -4,
@@ -158,7 +171,7 @@ export const initial: Piece[] = [
     id: 'photo-paris',
     product: 'architecture',
     x: 19,
-    y: 95,
+    y: 77,
     w: 237,
     h: 175,
     r: -5,
@@ -167,29 +180,29 @@ export const initial: Piece[] = [
     id: 'photo-sculpture',
     product: 'sculpture',
     x: 27,
-    y: 433,
+    y: 341,
     w: 151,
     h: 227,
     r: 0,
   },
-  { id: 'frame-gold', product: 'frame', x: 11, y: 417, w: 183, h: 245, r: 0 },
-  { id: 'rose-left', product: 'rose', x: 17, y: 240, w: 169, h: 119, r: -22 },
+  { id: 'frame-gold', product: 'frame', x: 11, y: 325, w: 183, h: 245, r: 0 },
+  { id: 'rose-left', product: 'rose', x: 17, y: 199, w: 169, h: 119, r: -22 },
 
-  { id: 'a', product: 'jacket', x: 139, y: 74, w: 295, h: 330, r: -4 },
-  { id: 'b', product: 'tank', x: 367, y: 94, w: 140, h: 185, r: 7 },
-  { id: 'c', product: 'jeans', x: 331, y: 291, w: 214, h: 377, r: 5 },
-  { id: 'd', product: 'bag', x: 176, y: 337, w: 191, h: 205, r: -11 },
-  { id: 'e', product: 'shoes', x: 103, y: 492, w: 232, h: 174, r: -9 },
-  { id: 'f', product: 'earrings', x: 492, y: 168, w: 88, h: 123, r: 14 },
-  { id: 'rose-bottom', product: 'rose', x: 254, y: 577, w: 102, h: 72, r: 15 },
-  { id: 'rose-top', product: 'rose', x: 482, y: 33, w: 90, h: 63, r: -18 },
+  { id: 'a', product: 'jacket', x: 139, y: 54, w: 295, h: 330, r: -4 },
+  { id: 'b', product: 'tank', x: 367, y: 76, w: 140, h: 185, r: 7 },
+  { id: 'c', product: 'jeans', x: 331, y: 201, w: 214, h: 377, r: 5 },
+  { id: 'd', product: 'bag', x: 176, y: 269, w: 191, h: 205, r: -11 },
+  { id: 'e', product: 'shoes', x: 103, y: 398, w: 232, h: 174, r: -9 },
+  { id: 'f', product: 'earrings', x: 492, y: 139, w: 88, h: 123, r: 14 },
+  { id: 'rose-bottom', product: 'rose', x: 254, y: 485, w: 102, h: 72, r: 15 },
+  { id: 'rose-top', product: 'rose', x: 482, y: 28, w: 90, h: 63, r: -18 },
   {
     id: 'g',
     product: 'signature',
     text: 'a little undone.',
     style: 'serif',
     x: 47,
-    y: 14,
+    y: 12,
     w: 290,
     h: 62,
     r: -4,
@@ -200,7 +213,7 @@ export const initial: Piece[] = [
     text: 'THE ART OF\nGETTING\nDRESSED',
     style: 'stamp',
     x: 22,
-    y: 334,
+    y: 278,
     w: 192,
     h: 101,
     r: -5,
@@ -211,7 +224,7 @@ export const initial: Piece[] = [
     text: 'PERSONAL STYLE\nVOL. 01 / SEPTEMBER',
     style: 'caption',
     x: 348,
-    y: 646,
+    y: 549,
     w: 199,
     h: 37,
     r: 0,

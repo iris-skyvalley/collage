@@ -45,7 +45,15 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { products, initial, textMetrics, type Piece } from './collage';
+import {
+  products,
+  initial,
+  textMetrics,
+  BOARD_W,
+  BOARD_H,
+  type Piece,
+  categories,
+} from './collage';
 import {
   useLibrary,
   useClipReceiver,
@@ -111,9 +119,9 @@ export default function Home() {
       for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(r - s) < 3) r = s;
     return Math.round(r === -180 ? 180 : r);
   }
-  /** Board units per screen pixel: the board is 600 wide whatever the zoom. */
+  /** Board units per screen pixel: the board is BOARD_W wide whatever the zoom. */
   function boardScale() {
-    return 600 / (canvas.current?.getBoundingClientRect().width || 600);
+    return BOARD_W / (canvas.current?.getBoundingClientRect().width || BOARD_W);
   }
   /** Where the pointer is in board coordinates. */
   function boardPoint(e: { clientX: number; clientY: number }) {
@@ -133,7 +141,7 @@ export default function Home() {
     cy: number,
     k: number,
   ) {
-    const w = Math.max(40, Math.min(600, w0 * k));
+    const w = Math.max(40, Math.min(BOARD_W, w0 * k));
     const h = (h0 * w) / w0;
     return { ...p, w, h, x: cx - w / 2, y: cy - h / 2 };
   }
@@ -239,8 +247,8 @@ export default function Home() {
       id: crypto.randomUUID(),
       product: 'object',
       object: o.id,
-      x: 300 - w / 2,
-      y: 350 - h / 2,
+      x: BOARD_W / 2 - w / 2,
+      y: BOARD_H / 2 - h / 2,
       w,
       h,
       r: 0,
@@ -294,12 +302,12 @@ export default function Home() {
   async function download() {
     try {
       const c = document.createElement('canvas');
-      c.width = 1200;
-      c.height = 1400;
+      c.width = BOARD_W * 2;
+      c.height = BOARD_H * 2;
       const ctx = c.getContext('2d')!;
       ctx.scale(2, 2);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 600, 700);
+      ctx.fillRect(0, 0, BOARD_W, BOARD_H);
       for (const p of pieces) {
         ctx.save();
         ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
@@ -675,8 +683,8 @@ export default function Home() {
                 <div
                   className="board-wrap"
                   style={{
-                    width: (600 * zoom) / 100,
-                    height: (700 * zoom) / 100,
+                    width: (BOARD_W * zoom) / 100,
+                    height: (BOARD_H * zoom) / 100,
                   }}
                 >
                   <div
@@ -810,21 +818,17 @@ export default function Home() {
                                       x: Math.max(
                                         0,
                                         Math.min(
-                                          600 - x.w,
+                                          BOARD_W - x.w,
                                           d.ox +
-                                            ((e.clientX - d.x) * 600) /
-                                              (canvas.current?.getBoundingClientRect()
-                                                .width || 600),
+                                            (e.clientX - d.x) * boardScale(),
                                         ),
                                       ),
                                       y: Math.max(
                                         0,
                                         Math.min(
-                                          700 - x.h,
+                                          BOARD_H - x.h,
                                           d.oy +
-                                            ((e.clientY - d.y) * 600) /
-                                              (canvas.current?.getBoundingClientRect()
-                                                .width || 600),
+                                            (e.clientY - d.y) * boardScale(),
                                         ),
                                       ),
                                     }
@@ -858,8 +862,8 @@ export default function Home() {
                           if (dx || dy) {
                             e.preventDefault();
                             patch({
-                              x: Math.max(0, Math.min(600 - p.w, p.x + dx)),
-                              y: Math.max(0, Math.min(700 - p.h, p.y + dy)),
+                              x: Math.max(0, Math.min(BOARD_W - p.w, p.x + dx)),
+                              y: Math.max(0, Math.min(BOARD_H - p.h, p.y + dy)),
                             });
                           }
                         }}
@@ -1014,7 +1018,7 @@ export default function Home() {
               </div>
               <footer className="canvas-footer">
                 <span>
-                  <span className="page-icon" /> Portrait · 1200 × 1400
+                  <span className="page-icon" /> Square · 1200 × 1200
                 </span>
                 <div>
                   <button
@@ -1094,21 +1098,17 @@ export default function Home() {
                   <div
                     className={tab === 'text' ? 'filters hidden' : 'filters'}
                   >
-                    {[
-                      'All pieces',
-                      'Clothing',
-                      'Magazine',
-                      'Objects',
-                      'Bags',
-                      'Shoes',
-                      'Accessories',
-                    ].map((c) => (
+                    {categories.map(([c, pic]) => (
                       <button
                         key={c}
                         onClick={() => setCategory(c)}
                         className={category === c ? 'active' : ''}
+                        aria-pressed={category === c}
                       >
-                        {c}
+                        <span className="filter-image">
+                          <img src={'/pieces/' + pic + '.png'} alt="" />
+                        </span>
+                        <span>{c}</span>
                       </button>
                     ))}
                   </div>
