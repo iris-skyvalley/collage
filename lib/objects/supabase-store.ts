@@ -114,6 +114,22 @@ export class SupabaseObjectStore implements ObjectStore {
     if (error) throw error;
   }
 
+  async setCategory(id: string, category: string | undefined) {
+    const { data, error } = await this.client
+      .from('objects')
+      .update({
+        category: category ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select('id');
+    if (error) throw error;
+    if (!data?.length)
+      throw new Error(
+        'That clip belongs to someone else, so it stays as it is.',
+      );
+  }
+
   async getObject(id: string) {
     const { data, error } = await this.client
       .from('objects')

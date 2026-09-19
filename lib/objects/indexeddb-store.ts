@@ -79,6 +79,15 @@ export class IndexedDbObjectStore implements ObjectStore {
       () => {},
     );
   }
+  async setCategory(id: string, category: string | undefined) {
+    const o = await this.getObject(id);
+    if (o)
+      await this.putObject({
+        ...o,
+        category,
+        updatedAt: new Date().toISOString(),
+      });
+  }
   getObject(id: string) {
     return this.run<ClipObject | undefined>('objects', 'readonly', (s) =>
       s.get(id),

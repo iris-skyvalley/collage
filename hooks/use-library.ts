@@ -228,6 +228,15 @@ export function useLibrary(pieces: Piece[], title: string) {
     [cutter, refresh, settled],
   );
 
+  /** File a clip under a different library category. */
+  const recategorize = useCallback(
+    async (o: ClipObject, category: string | undefined) => {
+      await store.setCategory(o.id, category);
+      await refresh();
+    },
+    [store, refresh],
+  );
+
   const remove = useCallback(
     async (o: ClipObject) => {
       await store.deleteObject(o.id);
@@ -251,6 +260,7 @@ export function useLibrary(pieces: Piece[], title: string) {
     srcById: (id: string) => urls[id],
     clip,
     remove,
+    recategorize,
     loadCreation,
     startNewCreation,
     creator,
