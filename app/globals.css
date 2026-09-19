@@ -166,9 +166,9 @@ body{font-size:16px}.filters button,.search input,.inspector h2,.background>labe
 .studio-panels{height:100%;min-height:inherit}
 .studio-panels .worktable,.studio-panels .library{height:100%}
 .studio-panels .library{border-left:0}
-.studio-divider{width:5px!important;flex-shrink:0;background:#e7e5e9;cursor:col-resize;transition:background .15s;touch-action:none}
-.studio-divider:hover,.studio-divider:focus-visible,.studio-divider[data-separator="active"]{background:#baa6d3}
-.studio-divider>div{height:34px;background:#a18bab;width:3px}
+.studio-divider{position:relative;width:5px!important;flex-shrink:0;background:none;cursor:col-resize;touch-action:none}.studio-divider::before{content:'';position:absolute;inset:0 2px;background:#e7e5e9;transition:background .15s}
+.studio-divider:hover::before,.studio-divider:focus-visible::before,.studio-divider[data-separator="active"]::before{background:#baa6d3}
+.studio-divider>div{position:relative;height:28px;background:#a18bab;width:1px}
 @media(max-width:760px){.studio-panels{display:block!important;height:auto!important}.studio-panels>[data-slot=resizable-panel]{height:auto!important;width:100%!important;overflow:visible!important}.studio-panels .worktable,.studio-panels .library{height:auto}.studio-divider{display:none!important}}
 /* Clipping: the header buttons, the clipper popover, and the clipped library. */
 .header-button{display:flex;align-items:center;gap:7px;height:40px;padding:0 14px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:#4f4757;background:#fff;white-space:nowrap}
