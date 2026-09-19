@@ -78,7 +78,7 @@ export default function Home() {
     [tab, setTab] = useState('pieces');
   const canvas = useRef<HTMLDivElement>(null);
   const area = useRef<HTMLDivElement>(null);
-  // Screen pixels per board unit at 100%: the board fills the canvas area.
+  // Screen pixels per board unit at 100%: the board fills the canvas height.
   const [fit, setFit] = useState(1);
   useEffect(() => {
     const el = area.current;
@@ -93,7 +93,7 @@ export default function Home() {
         el.clientHeight -
         parseFloat(cs.paddingTop) -
         parseFloat(cs.paddingBottom);
-      if (w > 0 && h > 0) setFit(Math.min(w / BOARD_W, h / BOARD_H));
+      if (w > 0 && h > 0) setFit(h / BOARD_H);
     };
     measure();
     const ro = new ResizeObserver(measure);
@@ -518,55 +518,55 @@ export default function Home() {
         <ResizablePanelGroup orientation="horizontal" className="studio-panels">
           <ResizablePanel id="canvas-panel" defaultSize="50%" minSize="35%">
             <section className="worktable">
-              <div className="canvas-area" ref={area}>
-                <div
-                  className="board-tools"
-                  aria-label="History, layer order and delete"
+              <div
+                className="board-tools"
+                aria-label="History, layer order and delete"
+              >
+                <button
+                  aria-label="Undo"
+                  title="Undo"
+                  disabled={!history.length}
+                  onClick={undo}
                 >
-                  <button
-                    aria-label="Undo"
-                    title="Undo"
-                    disabled={!history.length}
-                    onClick={undo}
-                  >
-                    <Undo2 size={18} />
-                  </button>
-                  <button
-                    aria-label="Redo"
-                    title="Redo"
-                    disabled={!future.length}
-                    onClick={redo}
-                  >
-                    <Redo2 size={18} />
-                  </button>
-                  <span />
-                  <button
-                    aria-label="Send to back"
-                    title="Send to back"
-                    disabled={!current}
-                    onClick={toBack}
-                  >
-                    <ArrowDown size={18} />
-                  </button>
-                  <button
-                    aria-label="Bring to front"
-                    title="Bring to front"
-                    disabled={!current}
-                    onClick={toFront}
-                  >
-                    <ArrowUp size={18} />
-                  </button>
-                  <span />
-                  <button
-                    className="tool-delete"
-                    aria-label="Delete"
-                    title="Delete"
-                    disabled={!current}
-                    onClick={remove}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                  <Undo2 size={18} />
+                </button>
+                <button
+                  aria-label="Redo"
+                  title="Redo"
+                  disabled={!future.length}
+                  onClick={redo}
+                >
+                  <Redo2 size={18} />
+                </button>
+                <span />
+                <button
+                  aria-label="Send to back"
+                  title="Send to back"
+                  disabled={!current}
+                  onClick={toBack}
+                >
+                  <ArrowDown size={18} />
+                </button>
+                <button
+                  aria-label="Bring to front"
+                  title="Bring to front"
+                  disabled={!current}
+                  onClick={toFront}
+                >
+                  <ArrowUp size={18} />
+                </button>
+                <span />
+                <button
+                  className="tool-delete"
+                  aria-label="Delete"
+                  title="Delete"
+                  disabled={!current}
+                  onClick={remove}
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+              <div className="canvas-area" ref={area}>
                 <ContextMenu
                   open={menuOpen}
                   onOpenChange={(o) => setMenuOpen(o && !!current)}
