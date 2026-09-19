@@ -172,7 +172,7 @@ body{font-size:16px}.filters button,.search input,.library-tabs button,.inspecto
 @media(max-width:760px){.studio-panels{display:block!important;height:auto!important}.studio-panels>[data-slot=resizable-panel]{height:auto!important;width:100%!important;overflow:visible!important}.studio-panels .worktable,.studio-panels .library{height:auto}.studio-divider{display:none!important}}
 /* Clipping: the header buttons, the clipper popover, and the clipped library. */
 .header-button{display:flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:#4f4757;background:#fff;white-space:nowrap}
-.clipper-popover{width:340px;max-width:calc(100vw - 32px);padding:18px 18px 16px}
+.clip-start{margin:0 0 14px}.clip-start .clipper-button{width:100%;justify-content:center;padding:11px 14px}.clipper-popover{width:340px;max-width:calc(100vw - 32px);padding:18px 18px 16px}
 .clipper-popover p{font-size:13px;line-height:1.55;color:#5b5363;margin:8px 0 14px}
 .clipper-popover ol{margin:0 0 14px;padding-left:20px;font-size:13px;line-height:1.7;color:#5b5363}
 .clipper-popover kbd{font:12px/1 ui-monospace,Menlo,monospace;background:#f1eef4;border:1px solid #e1dde6;border-radius:4px;padding:2px 5px}

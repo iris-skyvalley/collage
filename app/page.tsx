@@ -175,18 +175,6 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const library = useLibrary(pieces, title);
-  // React refuses javascript: hrefs; the bookmarklet is one by design. It is
-  // for dragging to the bookmarks bar, so a click in the studio is a no-op.
-  function bookmarklet(a: HTMLAnchorElement | null) {
-    if (!a) return;
-    a.setAttribute(
-      'href',
-      bookmarkletFor(location.origin, import.meta.env.DEV),
-    );
-    const swallow = (e: Event) => e.preventDefault();
-    a.addEventListener('click', swallow);
-    return () => a.removeEventListener('click', swallow);
-  }
   const [account, setAccount] = useState<'closed' | 'claim' | 'signin'>(
     'closed',
   );
@@ -547,62 +535,6 @@ export default function Home() {
           >
             <FilePlus size={16} /> New
           </button>
-          <Popover>
-            <PopoverTrigger className="header-button">
-              <Scissors size={16} /> Clip from the web
-            </PopoverTrigger>
-            <PopoverContent align="end" className="clipper-popover">
-              <PopoverTitle>The clipper</PopoverTitle>
-              <p>
-                The clipper is a bookmark whose address is a bit of code. On any
-                product page, click it, hover over a photo, and click: the
-                object lands in your library with its brand, price and retailer.
-              </p>
-              <ol>
-                <li>
-                  Show your bookmarks bar: <kbd>⌘⇧B</kbd> on a Mac,{' '}
-                  <kbd>Ctrl⇧B</kbd> elsewhere.
-                </li>
-                <li>Drag this button onto that bar:</li>
-              </ol>
-              <a
-                ref={bookmarklet}
-                href="#clipper"
-                className="bookmarklet"
-                draggable
-                title="Drag me to your bookmarks bar"
-              >
-                <Scissors size={15} /> Clip to Offcut
-              </a>
-              <p className="clipper-alt">
-                Can’t drag it? Copy the code, make a new bookmark by hand
-                (right-click the bookmarks bar → Add page), and paste the code
-                as its address.
-              </p>
-              <button
-                className="header-button"
-                onClick={() => {
-                  navigator.clipboard
-                    .writeText(
-                      bookmarkletFor(location.origin, import.meta.env.DEV),
-                    )
-                    .then(() =>
-                      announce('Copied. Paste it as a new bookmark’s address.'),
-                    )
-                    .catch(() =>
-                      announce('Could not copy. Drag the button instead.'),
-                    );
-                }}
-              >
-                <Copy size={15} /> Copy the clipper code
-              </button>
-              <small>
-                Photos on a plain backdrop are cut out automatically. Sites with
-                a strict content policy can block bookmarklets; a browser
-                extension is the next step for those.
-              </small>
-            </PopoverContent>
-          </Popover>
           <button className="export" onClick={download}>
             Export collage <ArrowUpRight size={17} />
           </button>
@@ -1029,6 +961,7 @@ export default function Home() {
                   query={query}
                   onQuery={setQuery}
                   onAdd={addObject}
+                  announce={announce}
                   onRemove={(o) => {
                     // Take it off the canvas only once it is really gone, so
                     // a refused removal does not empty the collage.
@@ -1232,6 +1165,77 @@ function pieceName(p: Piece, objects: ClipObject[]): string | undefined {
     : products.find((x) => x.id === p.product)?.name;
 }
 
+/** The clipper explainer. It lives with the clips it makes, in that tab. */
+function ClipperPopover({ announce }: { announce: (s: string) => void }) {
+  // React refuses javascript: hrefs; the bookmarklet is one by design. It is
+  // for dragging to the bookmarks bar, so a click in the studio is a no-op.
+  function bookmarklet(a: HTMLAnchorElement | null) {
+    if (!a) return;
+    a.setAttribute(
+      'href',
+      bookmarkletFor(location.origin, import.meta.env.DEV),
+    );
+    const swallow = (e: Event) => e.preventDefault();
+    a.addEventListener('click', swallow);
+    return () => a.removeEventListener('click', swallow);
+  }
+  return (
+    <Popover>
+      <PopoverTrigger className="header-button clipper-button">
+        <Scissors size={16} /> Clip from the web
+      </PopoverTrigger>
+      <PopoverContent align="start" className="clipper-popover">
+        <PopoverTitle>The clipper</PopoverTitle>
+        <p>
+          The clipper is a bookmark whose address is a bit of code. On any
+          product page, click it, hover over a photo, and click: the object
+          lands in your library with its brand, price and retailer.
+        </p>
+        <ol>
+          <li>
+            Show your bookmarks bar: <kbd>⌘⇧B</kbd> on a Mac, <kbd>Ctrl⇧B</kbd>{' '}
+            elsewhere.
+          </li>
+          <li>Drag this button onto that bar:</li>
+        </ol>
+        <a
+          ref={bookmarklet}
+          href="#clipper"
+          className="bookmarklet"
+          draggable
+          title="Drag me to your bookmarks bar"
+        >
+          <Scissors size={15} /> Clip to Offcut
+        </a>
+        <p className="clipper-alt">
+          Can’t drag it? Copy the code, make a new bookmark by hand (right-click
+          the bookmarks bar → Add page), and paste the code as its address.
+        </p>
+        <button
+          className="header-button"
+          onClick={() => {
+            navigator.clipboard
+              .writeText(bookmarkletFor(location.origin, import.meta.env.DEV))
+              .then(() =>
+                announce('Copied. Paste it as a new bookmark’s address.'),
+              )
+              .catch(() =>
+                announce('Could not copy. Drag the button instead.'),
+              );
+          }}
+        >
+          <Copy size={15} /> Copy the clipper code
+        </button>
+        <small>
+          Photos on a plain backdrop are cut out automatically. Sites with a
+          strict content policy can block bookmarklets; a browser extension is
+          the next step for those.
+        </small>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function ClippedLibrary({
   objects,
   usage,
@@ -1240,6 +1244,7 @@ function ClippedLibrary({
   onQuery,
   onAdd,
   onRemove,
+  announce,
 }: {
   objects: ClipObject[];
   usage: Record<string, number>;
@@ -1248,6 +1253,7 @@ function ClippedLibrary({
   onQuery: (q: string) => void;
   onAdd: (o: ClipObject) => void;
   onRemove: (o: ClipObject) => void;
+  announce: (s: string) => void;
 }) {
   const shown = objects.filter((o) =>
     [
@@ -1264,6 +1270,9 @@ function ClippedLibrary({
   const used = objects.reduce((n, o) => n + (usage[o.id] || 0), 0);
   return (
     <>
+      <div className="clip-start">
+        <ClipperPopover announce={announce} />
+      </div>
       <label className="search">
         <Search size={17} />
         <input
