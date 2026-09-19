@@ -23,6 +23,7 @@ import {
   Save,
   Mail,
   LayoutGrid,
+  MoreHorizontal,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -558,20 +559,20 @@ export default function Home() {
                 </button>
                 <span />
                 <button
-                  aria-label="Send to back"
-                  title="Send to back"
-                  disabled={!current}
-                  onClick={toBack}
-                >
-                  <ArrowDown size={18} />
-                </button>
-                <button
                   aria-label="Bring to front"
                   title="Bring to front"
                   disabled={!current}
                   onClick={toFront}
                 >
                   <ArrowUp size={18} />
+                </button>
+                <button
+                  aria-label="Send to back"
+                  title="Send to back"
+                  disabled={!current}
+                  onClick={toBack}
+                >
+                  <ArrowDown size={18} />
                 </button>
                 <span />
                 <button
@@ -1525,23 +1526,25 @@ function ClippedLibrary({
           </p>
         </div>
       ) : (
-        <div className="products">
+        <div className="clips">
           {shown.map((o) => {
             const n = usage[o.id] || 0;
-            const meta = [o.brand, formatPrice(o)].filter(Boolean).join(' · ');
+            const meta = [o.brand, formatPrice(o)]
+              .filter(Boolean)
+              .join(' \u00b7 ');
+            const used = n
+              ? `Used in ${n} ${n === 1 ? 'creation' : 'creations'}`
+              : 'Not used yet';
             return (
-              <div className="product clip-card" key={o.id}>
+              <div className="clip-tile" key={o.id}>
                 <button
-                  className="product-image"
+                  className="clip-image"
                   onClick={() => onAdd(o)}
-                  title={`Add “${o.title}” to the canvas`}
+                  title={[o.title, meta, used].filter(Boolean).join('\n')}
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData('object', o.id)}
                 >
                   <img src={src(o)} alt={o.title} />
-                  <span className="add">
-                    <Plus size={15} />
-                  </span>
                   {o.cutout.status !== 'done' && (
                     <span
                       className="clip-flag"
@@ -1555,47 +1558,54 @@ function ClippedLibrary({
                     </span>
                   )}
                 </button>
-                <strong>{o.title}</strong>
-                <small>{meta || o.source.retailer}</small>
-                <label className="clip-category">
-                  <span className="sr-only">Category for {o.title}</span>
-                  <select
-                    value={categoryFor(o) ?? ''}
-                    onChange={(e) =>
-                      onRecategorize(o, e.target.value || undefined)
-                    }
+                <Popover>
+                  <PopoverTrigger
+                    className="clip-more"
+                    aria-label={`What ${o.title} is, and where it came from`}
+                    title="Details"
                   >
-                    <option value="">Uncategorised</option>
-                    {categoryNames.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <small className="usage">
-                  {n
-                    ? `Used in ${n} ${n === 1 ? 'creation' : 'creations'}`
-                    : 'Not used yet'}
-                </small>
-                <span className="clip-actions">
-                  <a
-                    href={o.source.canonicalUrl ?? o.source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={`Open at ${o.source.retailer ?? o.source.host}`}
-                  >
-                    <ExternalLink size={13} />{' '}
-                    {o.source.retailer ?? o.source.host}
-                  </a>
-                  <button
-                    aria-label={`Remove ${o.title} from your library`}
-                    title="Remove from your library"
-                    onClick={() => onRemove(o)}
-                  >
-                    <X size={13} />
-                  </button>
-                </span>
+                    <MoreHorizontal size={14} />
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="clip-detail">
+                    <strong>{o.title}</strong>
+                    <small>{meta || o.source.retailer}</small>
+                    <label className="clip-category">
+                      <span className="sr-only">Category for {o.title}</span>
+                      <select
+                        value={categoryFor(o) ?? ''}
+                        onChange={(e) =>
+                          onRecategorize(o, e.target.value || undefined)
+                        }
+                      >
+                        <option value="">Uncategorised</option>
+                        {categoryNames.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <small className="usage">{used}</small>
+                    <span className="clip-actions">
+                      <a
+                        href={o.source.canonicalUrl ?? o.source.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={`Open at ${o.source.retailer ?? o.source.host}`}
+                      >
+                        <ExternalLink size={13} />{' '}
+                        {o.source.retailer ?? o.source.host}
+                      </a>
+                      <button
+                        aria-label={`Remove ${o.title} from your library`}
+                        title="Remove from your library"
+                        onClick={() => onRemove(o)}
+                      >
+                        <X size={13} />
+                      </button>
+                    </span>
+                  </PopoverContent>
+                </Popover>
               </div>
             );
           })}
