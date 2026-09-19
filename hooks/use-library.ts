@@ -57,6 +57,9 @@ export function useLibrary(pieces: Piece[], title: string) {
     () => makeSharedStore() ?? makeLocalStore(),
   );
   const [creator, setCreator] = useState<string | null>(null);
+  // Refresh runs from effects and callbacks that were created before the
+  // identity was known, so it reads the id from here rather than from state.
+  const creatorRef = useRef<string | null>(null);
   const [identity, setIdentity] = useState<Identity | null>(null);
   /** Why the shared library was given up on, when it was. */
   const [fallback, setFallback] = useState<string | null>(null);
@@ -79,7 +82,9 @@ export function useLibrary(pieces: Piece[], title: string) {
   const [hydrated, setHydrated] = useState(false);
 
   const refresh = useCallback(async () => {
-    const list = await store.listObjects();
+    const list = await store.listObjects({
+      clippedBy: creatorRef.current ?? undefined,
+    });
     const counts = await store.usageCounts(list.map((o) => o.id));
     const next = { ...urlsRef.current };
     await Promise.all(
@@ -125,6 +130,7 @@ export function useLibrary(pieces: Piece[], title: string) {
           ? await store.whoAmI()
           : local(CREATOR_KEY, newId);
         if (cancelled) return;
+        creatorRef.current = id;
         setCreator(id);
         if (store.account) setIdentity(await store.account.get());
         await refresh();
@@ -158,6 +164,7 @@ export function useLibrary(pieces: Piece[], title: string) {
     if (!store.account) return;
     return store.account.onChange((who) => {
       setIdentity(who);
+      creatorRef.current = who.id;
       setCreator(who.id);
       refresh().catch(() => {});
     });
@@ -224,8 +231,10 @@ export function useLibrary(pieces: Piece[], title: string) {
   const remove = useCallback(
     async (o: ClipObject) => {
       await store.deleteObject(o.id);
+      // Blobs are best-effort: the row is gone, so a stray file is harmless
+      // and must not make the removal look like it failed.
       for (const ref of [o.originalImage, o.cutoutImage])
-        if (ref?.blobKey) await store.deleteBlob(ref.blobKey);
+        if (ref?.blobKey) await store.deleteBlob(ref.blobKey).catch(() => {});
       const u = urlsRef.current[o.id];
       if (u?.startsWith('blob:')) URL.revokeObjectURL(u);
       delete urlsRef.current[o.id];

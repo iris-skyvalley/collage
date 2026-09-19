@@ -139,8 +139,16 @@ export class SupabaseObjectStore implements ObjectStore {
   }
 
   async deleteObject(id: string) {
-    const { error } = await this.client.from('objects').delete().eq('id', id);
+    // Row level security refuses another user's row by matching nothing at
+    // all, without an error, so ask for what was deleted and say so.
+    const { data, error } = await this.client
+      .from('objects')
+      .delete()
+      .eq('id', id)
+      .select('id');
     if (error) throw error;
+    if (!data?.length)
+      throw new Error('That clip belongs to someone else, so it stays.');
   }
 
   async putBlob(key: string, blob: Blob) {

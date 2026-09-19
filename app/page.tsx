@@ -19,7 +19,6 @@ import {
   RotateCcw,
   Check,
   Move,
-  Sparkles,
   Scissors,
   ExternalLink,
   FilePlus,
@@ -999,13 +998,6 @@ export default function Home() {
                           )}
                         </div>
                       )}
-                    {pieces.length === 0 && (
-                      <div className="blank">
-                        <Sparkles />
-                        <h2>A fresh point of view.</h2>
-                        <p>Add your first piece from the edit.</p>
-                      </div>
-                    )}
                   </div>
                 </div>
                 <span className="canvas-caption">
@@ -1072,12 +1064,23 @@ export default function Home() {
                   onQuery={setQuery}
                   onAdd={addObject}
                   onRemove={(o) => {
-                    if (pieces.some((p) => p.object === o.id))
-                      commit(pieces.filter((p) => p.object !== o.id));
+                    // Take it off the canvas only once it is really gone, so
+                    // a refused removal does not empty the collage.
                     library
                       .remove(o)
-                      .then(() => announce('Removed from your library.'))
-                      .catch(() => announce('Could not remove that.'));
+                      .then(() => {
+                        if (pieces.some((p) => p.object === o.id))
+                          commit(pieces.filter((p) => p.object !== o.id));
+                        announce('Removed from your library.');
+                      })
+                      .catch((e: unknown) =>
+                        announce(
+                          e instanceof Error
+                            ? e.message
+                            : 'Could not remove that.',
+                          4000,
+                        ),
+                      );
                   }}
                 />
               ) : (
