@@ -8,14 +8,11 @@ import {
   Undo2,
   Redo2,
   Download,
-  MousePointer2,
   Type,
   Trash2,
   Copy,
-  Layers,
   ArrowUp,
   ArrowDown,
-  Minus,
   RotateCcw,
   Check,
   Move,
@@ -39,12 +36,27 @@ import {
   PopoverTitle,
 } from '@/components/ui/popover';
 import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from '@/components/ui/context-menu';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { products, initial, textMetrics, type Piece } from './collage';
+import {
+  products,
+  initial,
+  textMetrics,
+  BOARD_W,
+  BOARD_H,
+  type Piece,
+  categoryGroups,
+} from './collage';
 import {
   useLibrary,
   useClipReceiver,
@@ -55,15 +67,38 @@ import type { ClipObject } from '@/lib/objects/schema';
 export default function Home() {
   const [pieces, setPieces] = useState<Piece[]>(initial),
     [selected, setSelected] = useState<string | null>(null),
-    [category, setCategory] = useState('All pieces'),
+    [category, setCategory] = useState(''),
     [query, setQuery] = useState(''),
     [title] = useState('The art of getting dressed'),
-    [zoom, setZoom] = useState(85),
     [notice, setNotice] = useState(''),
     [history, setHistory] = useState<Piece[][]>([]),
     [future, setFuture] = useState<Piece[][]>([]),
     [tab, setTab] = useState('pieces');
   const canvas = useRef<HTMLDivElement>(null);
+  const area = useRef<HTMLDivElement>(null);
+  // Screen pixels per board unit at 100%: the board fills the canvas area.
+  const [fit, setFit] = useState(1);
+  useEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    const measure = () => {
+      const cs = getComputedStyle(el);
+      const w =
+        el.clientWidth -
+        parseFloat(cs.paddingLeft) -
+        parseFloat(cs.paddingRight);
+      const h =
+        el.clientHeight -
+        parseFloat(cs.paddingTop) -
+        parseFloat(cs.paddingBottom);
+      if (w > 0 && h > 0) setFit(Math.min(w / BOARD_W, h / BOARD_H));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const scale = fit;
   const drag = useRef<{
     id: string;
     x: number;
@@ -110,9 +145,9 @@ export default function Home() {
       for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(r - s) < 3) r = s;
     return Math.round(r === -180 ? 180 : r);
   }
-  /** Board units per screen pixel: the board is 600 wide whatever the zoom. */
+  /** Board units per screen pixel: the board is BOARD_W wide whatever the scale. */
   function boardScale() {
-    return 600 / (canvas.current?.getBoundingClientRect().width || 600);
+    return BOARD_W / (canvas.current?.getBoundingClientRect().width || BOARD_W);
   }
   /** Where the pointer is in board coordinates. */
   function boardPoint(e: { clientX: number; clientY: number }) {
@@ -132,11 +167,13 @@ export default function Home() {
     cy: number,
     k: number,
   ) {
-    const w = Math.max(40, Math.min(600, w0 * k));
+    const w = Math.max(40, Math.min(BOARD_W, w0 * k));
     const h = (h0 * w) / w0;
     return { ...p, w, h, x: cx - w / 2, y: cy - h / 2 };
   }
   const current = pieces.find((p) => p.id === selected);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editingText, setEditingText] = useState(false);
   const library = useLibrary(pieces, title);
   // React refuses javascript: hrefs; the bookmarklet is one by design. It is
   // for dragging to the bookmarks bar, so a click in the studio is a no-op.
@@ -238,8 +275,8 @@ export default function Home() {
       id: crypto.randomUUID(),
       product: 'object',
       object: o.id,
-      x: 300 - w / 2,
-      y: 350 - h / 2,
+      x: BOARD_W / 2 - w / 2,
+      y: BOARD_H / 2 - h / 2,
       w,
       h,
       r: 0,
@@ -254,6 +291,27 @@ export default function Home() {
   }
   function patch(v: Partial<Piece>) {
     commit(pieces.map((p) => (p.id === selected ? { ...p, ...v } : p)));
+  }
+  function toBack() {
+    if (current) commit([current, ...pieces.filter((p) => p.id !== selected)]);
+  }
+  function toFront() {
+    if (current) commit([...pieces.filter((p) => p.id !== selected), current]);
+  }
+  function duplicate() {
+    if (!current) return;
+    const n = {
+      ...current,
+      id: crypto.randomUUID(),
+      x: current.x + 20,
+      y: current.y + 20,
+    };
+    commit([...pieces, n]);
+    setSelected(n.id);
+  }
+  function remove() {
+    commit(pieces.filter((p) => p.id !== selected));
+    setSelected(null);
   }
   function add(id: string) {
     const product = products.find((p) => p.id === id);
@@ -293,12 +351,12 @@ export default function Home() {
   async function download() {
     try {
       const c = document.createElement('canvas');
-      c.width = 1200;
-      c.height = 1400;
+      c.width = BOARD_W * 2;
+      c.height = BOARD_H * 2;
       const ctx = c.getContext('2d')!;
       ctx.scale(2, 2);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 600, 700);
+      ctx.fillRect(0, 0, BOARD_W, BOARD_H);
       for (const p of pieces) {
         ctx.save();
         ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
@@ -412,9 +470,10 @@ export default function Home() {
   const shown = products.filter(
     (p) =>
       (tab === 'text'
-        ? p.category === 'Typography'
-        : p.category !== 'Typography' &&
-          (category === 'All pieces' || p.category === category)) &&
+        ? p.category === 'Text'
+        : category
+          ? p.category === category
+          : p.category !== 'Text') &&
       (p.name + ' ' + p.detail).toLowerCase().includes(query.toLowerCase()),
   );
   return (
@@ -423,7 +482,6 @@ export default function Home() {
         <a className="logo" href="/">
           offcut<span>✳</span>
         </a>
-        <span className="studio-label">THE COLLAGE STUDIO</span>
         <div className="header-right">
           <span className="session">
             <span />{' '}
@@ -435,6 +493,41 @@ export default function Home() {
                   ? 'Saving in this browser'
                   : 'A little space for your taste'}
           </span>
+          <div className="header-icons" aria-label="History and layer order">
+            <button
+              aria-label="Undo"
+              title="Undo"
+              disabled={!history.length}
+              onClick={undo}
+            >
+              <Undo2 size={18} />
+            </button>
+            <button
+              aria-label="Redo"
+              title="Redo"
+              disabled={!future.length}
+              onClick={redo}
+            >
+              <Redo2 size={18} />
+            </button>
+            <span />
+            <button
+              aria-label="Send to back"
+              title="Send to back"
+              disabled={!current}
+              onClick={toBack}
+            >
+              <ArrowDown size={18} />
+            </button>
+            <button
+              aria-label="Bring to front"
+              title="Bring to front"
+              disabled={!current}
+              onClick={toFront}
+            >
+              <ArrowUp size={18} />
+            </button>
+          </div>
           <button
             className="header-button"
             title="Save this collage"
@@ -517,516 +610,389 @@ export default function Home() {
       </header>
       <div className="workspace">
         <ResizablePanelGroup orientation="horizontal" className="studio-panels">
-          <ResizablePanel id="canvas-panel" defaultSize="72%" minSize="35%">
+          <ResizablePanel id="canvas-panel" defaultSize="64%" minSize="35%">
             <section className="worktable">
-              <div
-                className="editor-toolbar"
-                aria-label="Collage editing tools"
-              >
-                {' '}
-                <div className="toolrail">
-                  <button
-                    className={!current?.text ? 'chosen' : ''}
-                    title="Select and move"
-                    aria-label="Select and move"
-                    onClick={() => setSelected(null)}
-                  >
-                    <MousePointer2 size={19} />
-                  </button>
-                  <button
-                    title="Add text"
-                    aria-label="Add text"
-                    onClick={() => add('text')}
-                  >
-                    <Type size={21} />
-                  </button>
-                  <span />
-                  <button
-                    title="Duplicate selection"
-                    aria-label="Duplicate selection"
-                    disabled={!current}
-                    onClick={() => {
-                      if (current) {
-                        const n = {
-                          ...current,
-                          id: crypto.randomUUID(),
-                          x: current.x + 20,
-                          y: current.y + 20,
-                        };
-                        commit([...pieces, n]);
-                        setSelected(n.id);
-                      }
-                    }}
-                  >
-                    <Copy size={18} />
-                  </button>
-                  <button
-                    title="Delete selection"
-                    aria-label="Delete selection"
-                    disabled={!current}
-                    onClick={() => {
-                      commit(pieces.filter((p) => p.id !== selected));
-                      setSelected(null);
-                    }}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-                <div className="history">
-                  <button
-                    aria-label="Undo"
-                    title="Undo"
-                    disabled={!history.length}
-                    onClick={undo}
-                  >
-                    <Undo2 size={18} />
-                  </button>
-                  <button
-                    aria-label="Redo"
-                    title="Redo"
-                    disabled={!future.length}
-                    onClick={redo}
-                  >
-                    <Redo2 size={18} />
-                  </button>
-                </div>
-                <Popover>
-                  <PopoverTrigger className="layers-toggle">
-                    <Layers size={17} /> Layers
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="layer-popover">
-                    <PopoverTitle>On your canvas</PopoverTitle>{' '}
-                    <div className="layers">
-                      <div className="eyebrow">
-                        ON YOUR CANVAS <span>{pieces.length}</span>
-                      </div>
-                      {[...pieces].reverse().map((p) => (
-                        <button
-                          key={p.id}
-                          className={selected === p.id ? 'active' : ''}
-                          onClick={() => setSelected(p.id)}
-                        >
-                          {p.text ? (
-                            <Type size={22} />
-                          ) : (
-                            <img src={imageSrc(p)} alt="" />
-                          )}
-                          <span>{p.text || pieceName(p, library.objects)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <div className="selection-tools">
-                  {current ? (
-                    <>
-                      {' '}
-                      {current.text !== undefined && (
-                        <label className="field">
-                          Text
-                          <textarea
-                            rows={3}
-                            value={current.text}
-                            onChange={(e) => patch({ text: e.target.value })}
-                          />
-                        </label>
-                      )}
-                      <div className="layer-buttons">
-                        <button
-                          onClick={() =>
-                            commit([
-                              current,
-                              ...pieces.filter((p) => p.id !== selected),
-                            ])
-                          }
-                        >
-                          <ArrowDown size={15} /> To back
-                        </button>
-                        <button
-                          onClick={() =>
-                            commit([
-                              ...pieces.filter((p) => p.id !== selected),
-                              current,
-                            ])
-                          }
-                        >
-                          <ArrowUp size={15} /> To front
-                        </button>
-                      </div>
-                      <button
-                        className="reset"
-                        disabled={current.r === 0}
-                        title="Rotate back to 0°"
-                        onClick={() => patch({ r: 0 })}
-                      >
-                        <RotateCcw size={15} /> Straighten
-                      </button>
-                    </>
-                  ) : (
-                    <span className="toolbar-hint">
-                      Select a piece. Drag a corner to resize, the knob to
-                      rotate.
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="canvas-area">
-                <div
-                  className="board-wrap"
-                  style={{
-                    width: (600 * zoom) / 100,
-                    height: (700 * zoom) / 100,
-                  }}
+              <div className="canvas-area" ref={area}>
+                <ContextMenu
+                  open={menuOpen}
+                  onOpenChange={(o) => setMenuOpen(o && !!current)}
                 >
-                  <div
-                    ref={canvas}
-                    className="board"
+                  <ContextMenuTrigger
+                    className="board-wrap"
                     style={{
-                      background: '#ffffff',
-                      transform: `scale(${zoom / 100})`,
-                    }}
-                    onPointerDown={(e) => {
-                      if (e.target === e.currentTarget) setSelected(null);
-                    }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const id = e.dataTransfer.getData('product');
-                      if (products.some((p) => p.id === id)) add(id);
-                      const objectId = e.dataTransfer.getData('object');
-                      const o = library.objects.find((x) => x.id === objectId);
-                      if (o) addObject(o);
+                      width: BOARD_W * scale,
+                      height: BOARD_H * scale,
                     }}
                   >
-                    {pieces.map((p) => (
-                      <div
-                        key={p.id}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={p.text || pieceName(p, library.objects)}
-                        className={
-                          'piece ' + (selected === p.id ? 'selected' : '')
-                        }
-                        style={{
-                          left: p.x,
-                          top: p.y,
-                          width: p.w,
-                          height: p.h,
-                          transform: `rotate(${p.r}deg)`,
-                        }}
-                        onFocus={() => setSelected(p.id)}
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                          try {
-                            e.currentTarget.setPointerCapture(e.pointerId);
-                          } catch {}
-                          setSelected(p.id);
-                          if (e.pointerType === 'touch') {
-                            touches.current.set(e.pointerId, {
+                    <div
+                      ref={canvas}
+                      className="board"
+                      style={{
+                        background: '#ffffff',
+                        transform: `scale(${scale})`,
+                      }}
+                      onPointerDown={(e) => {
+                        if (e.target === e.currentTarget) setSelected(null);
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const id = e.dataTransfer.getData('product');
+                        if (products.some((p) => p.id === id)) add(id);
+                        const objectId = e.dataTransfer.getData('object');
+                        const o = library.objects.find(
+                          (x) => x.id === objectId,
+                        );
+                        if (o) addObject(o);
+                      }}
+                    >
+                      {pieces.map((p) => (
+                        <div
+                          key={p.id}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={p.text || pieceName(p, library.objects)}
+                          className={
+                            'piece ' + (selected === p.id ? 'selected' : '')
+                          }
+                          style={{
+                            left: p.x,
+                            top: p.y,
+                            width: p.w,
+                            height: p.h,
+                            transform: `rotate(${p.r}deg)`,
+                          }}
+                          onFocus={() => setSelected(p.id)}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            setSelected(p.id);
+                            if (e.button !== 0) return;
+                            try {
+                              e.currentTarget.setPointerCapture(e.pointerId);
+                            } catch {}
+                            if (e.pointerType === 'touch') {
+                              touches.current.set(e.pointerId, {
+                                x: e.clientX,
+                                y: e.clientY,
+                              });
+                              const pts = [...touches.current.values()];
+                              if (pts.length === 2) {
+                                // Second finger: switch from moving to pinching.
+                                drag.current = null;
+                                pinch.current = {
+                                  id: p.id,
+                                  dist: Math.hypot(
+                                    pts[1].x - pts[0].x,
+                                    pts[1].y - pts[0].y,
+                                  ),
+                                  angle: Math.atan2(
+                                    pts[1].y - pts[0].y,
+                                    pts[1].x - pts[0].x,
+                                  ),
+                                  w: p.w,
+                                  h: p.h,
+                                  r: p.r,
+                                  cx: p.x + p.w / 2,
+                                  cy: p.y + p.h / 2,
+                                };
+                                return;
+                              }
+                            }
+                            setHistory((h) => [...h, pieces]);
+                            setFuture([]);
+                            drag.current = {
+                              id: p.id,
                               x: e.clientX,
                               y: e.clientY,
-                            });
-                            const pts = [...touches.current.values()];
-                            if (pts.length === 2) {
-                              // Second finger: switch from moving to pinching.
-                              drag.current = null;
-                              pinch.current = {
-                                id: p.id,
-                                dist: Math.hypot(
-                                  pts[1].x - pts[0].x,
-                                  pts[1].y - pts[0].y,
+                              ox: p.x,
+                              oy: p.y,
+                            };
+                          }}
+                          onPointerMove={(e) => {
+                            if (touches.current.has(e.pointerId))
+                              touches.current.set(e.pointerId, {
+                                x: e.clientX,
+                                y: e.clientY,
+                              });
+                            const z = pinch.current;
+                            if (z?.id === p.id && touches.current.size >= 2) {
+                              const pts = [...touches.current.values()];
+                              const dist = Math.hypot(
+                                pts[1].x - pts[0].x,
+                                pts[1].y - pts[0].y,
+                              );
+                              const angle = Math.atan2(
+                                pts[1].y - pts[0].y,
+                                pts[1].x - pts[0].x,
+                              );
+                              const r = Math.round(
+                                z.r + ((angle - z.angle) * 180) / Math.PI,
+                              );
+                              setPieces((ps) =>
+                                ps.map((x) =>
+                                  x.id === p.id
+                                    ? {
+                                        ...scaled(
+                                          x,
+                                          z.w,
+                                          z.h,
+                                          z.cx,
+                                          z.cy,
+                                          dist / z.dist,
+                                        ),
+                                        r:
+                                          ((((r + 180) % 360) + 360) % 360) -
+                                          180,
+                                      }
+                                    : x,
                                 ),
-                                angle: Math.atan2(
-                                  pts[1].y - pts[0].y,
-                                  pts[1].x - pts[0].x,
-                                ),
-                                w: p.w,
-                                h: p.h,
-                                r: p.r,
-                                cx: p.x + p.w / 2,
-                                cy: p.y + p.h / 2,
-                              };
+                              );
                               return;
                             }
-                          }
-                          setHistory((h) => [...h, pieces]);
-                          setFuture([]);
-                          drag.current = {
-                            id: p.id,
-                            x: e.clientX,
-                            y: e.clientY,
-                            ox: p.x,
-                            oy: p.y,
-                          };
-                        }}
-                        onPointerMove={(e) => {
-                          if (touches.current.has(e.pointerId))
-                            touches.current.set(e.pointerId, {
-                              x: e.clientX,
-                              y: e.clientY,
-                            });
-                          const z = pinch.current;
-                          if (z?.id === p.id && touches.current.size >= 2) {
-                            const pts = [...touches.current.values()];
-                            const dist = Math.hypot(
-                              pts[1].x - pts[0].x,
-                              pts[1].y - pts[0].y,
-                            );
-                            const angle = Math.atan2(
-                              pts[1].y - pts[0].y,
-                              pts[1].x - pts[0].x,
-                            );
-                            const r = Math.round(
-                              z.r + ((angle - z.angle) * 180) / Math.PI,
-                            );
-                            setPieces((ps) =>
-                              ps.map((x) =>
-                                x.id === p.id
-                                  ? {
-                                      ...scaled(
-                                        x,
-                                        z.w,
-                                        z.h,
-                                        z.cx,
-                                        z.cy,
-                                        dist / z.dist,
-                                      ),
-                                      r:
-                                        ((((r + 180) % 360) + 360) % 360) - 180,
-                                    }
-                                  : x,
-                              ),
-                            );
-                            return;
-                          }
-                          const d = drag.current;
-                          if (d?.id === p.id)
-                            setPieces((ps) =>
-                              ps.map((x) =>
-                                x.id === p.id
-                                  ? {
-                                      ...x,
-                                      x: Math.max(
-                                        0,
-                                        Math.min(
-                                          600 - x.w,
-                                          d.ox +
-                                            ((e.clientX - d.x) * 600) /
-                                              (canvas.current?.getBoundingClientRect()
-                                                .width || 600),
+                            const d = drag.current;
+                            if (d?.id === p.id)
+                              setPieces((ps) =>
+                                ps.map((x) =>
+                                  x.id === p.id
+                                    ? {
+                                        ...x,
+                                        x: Math.max(
+                                          0,
+                                          Math.min(
+                                            BOARD_W - x.w,
+                                            d.ox +
+                                              (e.clientX - d.x) * boardScale(),
+                                          ),
                                         ),
-                                      ),
-                                      y: Math.max(
-                                        0,
-                                        Math.min(
-                                          700 - x.h,
-                                          d.oy +
-                                            ((e.clientY - d.y) * 600) /
-                                              (canvas.current?.getBoundingClientRect()
-                                                .width || 600),
+                                        y: Math.max(
+                                          0,
+                                          Math.min(
+                                            BOARD_H - x.h,
+                                            d.oy +
+                                              (e.clientY - d.y) * boardScale(),
+                                          ),
                                         ),
-                                      ),
-                                    }
-                                  : x,
-                              ),
-                            );
-                        }}
-                        onPointerUp={(e) => {
-                          touches.current.delete(e.pointerId);
-                          drag.current = null;
-                          if (touches.current.size < 2) pinch.current = null;
-                        }}
-                        onPointerCancel={(e) => {
-                          touches.current.delete(e.pointerId);
-                          drag.current = null;
-                          if (touches.current.size < 2) pinch.current = null;
-                        }}
-                        onKeyDown={(e) => {
-                          const dx =
-                              e.key === 'ArrowRight'
-                                ? 5
-                                : e.key === 'ArrowLeft'
-                                  ? -5
-                                  : 0,
-                            dy =
-                              e.key === 'ArrowDown'
-                                ? 5
-                                : e.key === 'ArrowUp'
-                                  ? -5
-                                  : 0;
-                          if (dx || dy) {
-                            e.preventDefault();
-                            patch({
-                              x: Math.max(0, Math.min(600 - p.w, p.x + dx)),
-                              y: Math.max(0, Math.min(700 - p.h, p.y + dy)),
-                            });
-                          }
-                        }}
-                      >
-                        {p.text ? (
-                          <span
-                            className="collage-text"
-                            style={{
-                              font: textMetrics(p).font,
-                              color: textMetrics(p).color,
-                              lineHeight: `${textMetrics(p).lineHeight}px`,
-                              background: textMetrics(p).background,
-                            }}
-                          >
-                            {p.text}
-                          </span>
-                        ) : (
-                          <img draggable={false} src={imageSrc(p)} alt="" />
-                        )}
-                      </div>
-                    ))}
-                    {current &&
-                      !current.text && (
-                        // Handles live above every piece, so a covered corner is
-                        // still reachable. The box itself lets clicks through.
-                        <div
-                          className="selection-box"
-                          style={{
-                            left: current.x,
-                            top: current.y,
-                            width: current.w,
-                            height: current.h,
-                            transform: `rotate(${current.r}deg)`,
+                                      }
+                                    : x,
+                                ),
+                              );
+                          }}
+                          onPointerUp={(e) => {
+                            touches.current.delete(e.pointerId);
+                            drag.current = null;
+                            if (touches.current.size < 2) pinch.current = null;
+                          }}
+                          onPointerCancel={(e) => {
+                            touches.current.delete(e.pointerId);
+                            drag.current = null;
+                            if (touches.current.size < 2) pinch.current = null;
+                          }}
+                          onKeyDown={(e) => {
+                            const dx =
+                                e.key === 'ArrowRight'
+                                  ? 5
+                                  : e.key === 'ArrowLeft'
+                                    ? -5
+                                    : 0,
+                              dy =
+                                e.key === 'ArrowDown'
+                                  ? 5
+                                  : e.key === 'ArrowUp'
+                                    ? -5
+                                    : 0;
+                            if (dx || dy) {
+                              e.preventDefault();
+                              patch({
+                                x: Math.max(
+                                  0,
+                                  Math.min(BOARD_W - p.w, p.x + dx),
+                                ),
+                                y: Math.max(
+                                  0,
+                                  Math.min(BOARD_H - p.h, p.y + dy),
+                                ),
+                              });
+                            }
                           }}
                         >
-                          {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => (
+                          {p.text ? (
+                            <span
+                              className="collage-text"
+                              style={{
+                                font: textMetrics(p).font,
+                                color: textMetrics(p).color,
+                                lineHeight: `${textMetrics(p).lineHeight}px`,
+                                background: textMetrics(p).background,
+                              }}
+                            >
+                              {p.text}
+                            </span>
+                          ) : (
+                            <img draggable={false} src={imageSrc(p)} alt="" />
+                          )}
+                        </div>
+                      ))}
+                      {current &&
+                        !current.text && (
+                          // Handles live above every piece, so a covered corner is
+                          // still reachable. The box itself lets clicks through.
+                          <div
+                            className="selection-box"
+                            style={{
+                              left: current.x,
+                              top: current.y,
+                              width: current.w,
+                              height: current.h,
+                              transform: `rotate(${current.r}deg)`,
+                            }}
+                          >
+                            {(['tl', 'tr', 'bl', 'br'] as const).map(
+                              (corner) => (
+                                <i
+                                  key={corner}
+                                  className={'handle ' + corner}
+                                  role="presentation"
+                                  onPointerDown={(e) => {
+                                    // A handle scales; the piece underneath must not move.
+                                    e.stopPropagation();
+                                    try {
+                                      e.currentTarget.setPointerCapture(
+                                        e.pointerId,
+                                      );
+                                    } catch {}
+                                    const cx = current.x + current.w / 2;
+                                    const cy = current.y + current.h / 2;
+                                    const pt = boardPoint(e);
+                                    setHistory((h) => [...h, pieces]);
+                                    setFuture([]);
+                                    setGesture('resize');
+                                    resize.current = {
+                                      id: current.id,
+                                      dist:
+                                        Math.hypot(pt.x - cx, pt.y - cy) || 1,
+                                      w: current.w,
+                                      h: current.h,
+                                      cx,
+                                      cy,
+                                    };
+                                  }}
+                                  onPointerMove={(e) => {
+                                    const rz = resize.current;
+                                    if (rz?.id !== current.id) return;
+                                    const pt = boardPoint(e);
+                                    const k =
+                                      Math.hypot(pt.x - rz.cx, pt.y - rz.cy) /
+                                      rz.dist;
+                                    setPieces((ps) =>
+                                      ps.map((x) =>
+                                        x.id === current.id
+                                          ? scaled(
+                                              x,
+                                              rz.w,
+                                              rz.h,
+                                              rz.cx,
+                                              rz.cy,
+                                              k,
+                                            )
+                                          : x,
+                                      ),
+                                    );
+                                  }}
+                                  onPointerUp={() => {
+                                    resize.current = null;
+                                    setGesture(null);
+                                  }}
+                                  onPointerCancel={() => {
+                                    resize.current = null;
+                                    setGesture(null);
+                                  }}
+                                />
+                              ),
+                            )}
                             <i
-                              key={corner}
-                              className={'handle ' + corner}
+                              className="rotor"
                               role="presentation"
+                              title="Drag to rotate; hold Shift for 15° steps"
                               onPointerDown={(e) => {
-                                // A handle scales; the piece underneath must not move.
                                 e.stopPropagation();
                                 try {
                                   e.currentTarget.setPointerCapture(
                                     e.pointerId,
                                   );
                                 } catch {}
-                                const cx = current.x + current.w / 2;
-                                const cy = current.y + current.h / 2;
-                                const pt = boardPoint(e);
                                 setHistory((h) => [...h, pieces]);
                                 setFuture([]);
-                                setGesture('resize');
-                                resize.current = {
+                                setGesture('rotate');
+                                rotate.current = {
                                   id: current.id,
-                                  dist: Math.hypot(pt.x - cx, pt.y - cy) || 1,
-                                  w: current.w,
-                                  h: current.h,
-                                  cx,
-                                  cy,
+                                  cx: current.x + current.w / 2,
+                                  cy: current.y + current.h / 2,
                                 };
                               }}
                               onPointerMove={(e) => {
-                                const rz = resize.current;
-                                if (rz?.id !== current.id) return;
-                                const pt = boardPoint(e);
-                                const k =
-                                  Math.hypot(pt.x - rz.cx, pt.y - rz.cy) /
-                                  rz.dist;
+                                const rt = rotate.current;
+                                if (rt?.id !== current.id) return;
+                                const r = angleTo(
+                                  rt.cx,
+                                  rt.cy,
+                                  boardPoint(e),
+                                  e.shiftKey,
+                                );
                                 setPieces((ps) =>
                                   ps.map((x) =>
-                                    x.id === current.id
-                                      ? scaled(x, rz.w, rz.h, rz.cx, rz.cy, k)
-                                      : x,
+                                    x.id === current.id ? { ...x, r } : x,
                                   ),
                                 );
                               }}
                               onPointerUp={() => {
-                                resize.current = null;
+                                rotate.current = null;
                                 setGesture(null);
                               }}
                               onPointerCancel={() => {
-                                resize.current = null;
+                                rotate.current = null;
                                 setGesture(null);
                               }}
                             />
-                          ))}
-                          <i
-                            className="rotor"
-                            role="presentation"
-                            title="Drag to rotate; hold Shift for 15° steps"
-                            onPointerDown={(e) => {
-                              e.stopPropagation();
-                              try {
-                                e.currentTarget.setPointerCapture(e.pointerId);
-                              } catch {}
-                              setHistory((h) => [...h, pieces]);
-                              setFuture([]);
-                              setGesture('rotate');
-                              rotate.current = {
-                                id: current.id,
-                                cx: current.x + current.w / 2,
-                                cy: current.y + current.h / 2,
-                              };
-                            }}
-                            onPointerMove={(e) => {
-                              const rt = rotate.current;
-                              if (rt?.id !== current.id) return;
-                              const r = angleTo(
-                                rt.cx,
-                                rt.cy,
-                                boardPoint(e),
-                                e.shiftKey,
-                              );
-                              setPieces((ps) =>
-                                ps.map((x) =>
-                                  x.id === current.id ? { ...x, r } : x,
-                                ),
-                              );
-                            }}
-                            onPointerUp={() => {
-                              rotate.current = null;
-                              setGesture(null);
-                            }}
-                            onPointerCancel={() => {
-                              rotate.current = null;
-                              setGesture(null);
-                            }}
-                          />
-                          {gesture && (
-                            <span className="readout">
-                              {gesture === 'resize'
-                                ? `${Math.round(current.w)} × ${Math.round(current.h)}`
-                                : `${current.r}°`}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                  </div>
-                </div>
-                <span className="canvas-caption">
-                  NO RULES. JUST YOUR POINT OF VIEW.
-                </span>
+                            {gesture && (
+                              <span className="readout">
+                                {gesture === 'resize'
+                                  ? `${Math.round(current.w)} × ${Math.round(current.h)}`
+                                  : `${current.r}°`}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    {current?.text !== undefined && (
+                      <ContextMenuItem onClick={() => setEditingText(true)}>
+                        <Type /> Edit text…
+                      </ContextMenuItem>
+                    )}
+                    <ContextMenuItem onClick={duplicate}>
+                      <Copy /> Duplicate
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onClick={toFront}>
+                      <ArrowUp /> Bring to front
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={toBack}>
+                      <ArrowDown /> Send to back
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      disabled={!current || current.r === 0}
+                      onClick={() => patch({ r: 0 })}
+                    >
+                      <RotateCcw /> Straighten
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem variant="destructive" onClick={remove}>
+                      <Trash2 /> Delete
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               </div>
-              <footer className="canvas-footer">
-                <span>
-                  <span className="page-icon" /> Portrait · 1200 × 1400
-                </span>
-                <div>
-                  <button
-                    aria-label="Zoom out"
-                    onClick={() => setZoom((z) => Math.max(40, z - 10))}
-                  >
-                    <Minus size={16} />
-                  </button>
-                  <span>{zoom}%</span>
-                  <button
-                    aria-label="Zoom in"
-                    onClick={() => setZoom((z) => Math.min(110, z + 10))}
-                  >
-                    <Plus size={16} />
-                  </button>
-                  <button className="fit" onClick={() => setZoom(85)}>
-                    Fit
-                  </button>
-                </div>
-              </footer>
             </section>
           </ResizablePanel>
           <ResizableHandle
@@ -1036,7 +1002,7 @@ export default function Home() {
           />
           <ResizablePanel
             id="catalog-panel"
-            defaultSize="28%"
+            defaultSize="36%"
             minSize="250px"
             maxSize="60%"
           >
@@ -1094,30 +1060,36 @@ export default function Home() {
                     />
                     <kbd>⌕</kbd>
                   </label>
-                  <div
-                    className={tab === 'text' ? 'filters hidden' : 'filters'}
-                  >
-                    {[
-                      'All pieces',
-                      'Clothing',
-                      'Magazine',
-                      'Objects',
-                      'Bags',
-                      'Shoes',
-                      'Accessories',
-                    ].map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => setCategory(c)}
-                        className={category === c ? 'active' : ''}
-                      >
-                        {c}
-                      </button>
+                  {tab !== 'text' &&
+                    categoryGroups.map((g) => (
+                      <div className="filter-group" key={g.title}>
+                        <span className="eyebrow">{g.title}</span>
+                        <div className="filters">
+                          {g.items.map((c) => (
+                            <button
+                              key={c.name}
+                              onClick={() =>
+                                setCategory(category === c.name ? '' : c.name)
+                              }
+                              className={category === c.name ? 'active' : ''}
+                              aria-pressed={category === c.name}
+                            >
+                              <span className="filter-image">
+                                <img src={c.picture} alt="" />
+                              </span>
+                              <span>{c.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                  </div>
                   <div className="catalog-heading">
                     <span>
-                      {query ? 'SEARCH RESULTS' : 'THE SCRAPBOOK EDIT'}
+                      {query
+                        ? 'SEARCH RESULTS'
+                        : category
+                          ? category.toUpperCase()
+                          : 'THE SCRAPBOOK EDIT'}
                     </span>
                     <span>{shown.length} pieces</span>
                   </div>
@@ -1154,7 +1126,9 @@ export default function Home() {
                   </div>
                   {!shown.length && (
                     <p className="empty">
-                      No pieces found. Try a different search.
+                      {category && !query
+                        ? `Nothing in ${category.toLowerCase()} yet. Clip a piece from the web to add one.`
+                        : 'No pieces found. Try a different search.'}
                     </p>
                   )}
                 </>
@@ -1166,6 +1140,19 @@ export default function Home() {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+      <Dialog open={editingText} onOpenChange={setEditingText}>
+        <DialogContent className="text-dialog">
+          <DialogTitle>Edit text</DialogTitle>
+          <DialogDescription>
+            Line breaks are kept. Resize the piece on the board to fit.
+          </DialogDescription>
+          <textarea
+            rows={4}
+            value={current?.text ?? ''}
+            onChange={(e) => patch({ text: e.target.value })}
+          />
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={account !== 'closed'}
         onOpenChange={(open) => !open && setAccount('closed')}
