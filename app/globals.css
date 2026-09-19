@@ -239,7 +239,7 @@ body{font-size:16px}.filters button,.search input,.inspector h2,.background>labe
 .board-tools .tool-delete{color:#9a6a70}
 .board-tools .tool-delete:hover:not(:disabled){background:#f8eaec;color:#a3333f}
 .text-dialog textarea{width:100%;margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:6px;font:italic 18px Georgia,serif;resize:vertical}
-.library{padding-top:10px}
+.library{padding-top:1px}
 /* Desktop: the page is exactly one viewport tall; only the library scrolls. */
 html,body{height:100%}
 @media(min-width:761px){
