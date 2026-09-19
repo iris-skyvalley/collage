@@ -67,6 +67,7 @@ import {
   bookmarkletFor,
 } from '@/hooks/use-library';
 import type { ClipObject, Creation } from '@/lib/objects/schema';
+import { clipChannel, type ClipMessage } from '@/lib/clip/channel';
 import { categoryFor, categoryNames } from '@/lib/clip/categorize';
 export default function Home() {
   const [pieces, setPieces] = useState<Piece[]>(initial),
@@ -239,6 +240,26 @@ export default function Home() {
       })
       .catch(() => {});
   }, [loadCreation]);
+  // A clip caught in the receiver tab: bring it into the library here, and
+  // answer the receiver so it knows it can close.
+  const { refresh } = library;
+  useEffect(() => {
+    const channel = clipChannel();
+    if (!channel) return;
+    const onMessage = (e: MessageEvent<ClipMessage>) => {
+      if (e.data?.type === 'studio?')
+        return channel.postMessage({ type: 'studio' } satisfies ClipMessage);
+      if (e.data?.type !== 'clipped') return;
+      setTab('clipped');
+      announce(`Clipped \u201c${e.data.title}\u201d.`);
+      void refresh().catch(() => {});
+    };
+    channel.addEventListener('message', onMessage);
+    return () => {
+      channel.removeEventListener('message', onMessage);
+      channel.close();
+    };
+  }, [refresh]);
   useClipReceiver((payload) => {
     announce('Clipping…');
     library

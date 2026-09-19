@@ -47,6 +47,29 @@ function makeLocalStore(): ObjectStore {
 }
 
 /**
+ * Take in a clip outside the studio, which is the receiver tab's whole job.
+ *
+ * It picks the store the way the studio does, so both tabs read and write the
+ * same library, and it leaves creations alone: a tab that exists to catch one
+ * clip has no canvas to save.
+ */
+export async function receiveClip(payload: ClipPayload): Promise<ClipObject> {
+  const identify = async (s: ObjectStore) =>
+    s.whoAmI ? await s.whoAmI() : local(CREATOR_KEY, newId);
+  let store = makeSharedStore() ?? makeLocalStore();
+  let who: string;
+  try {
+    who = await identify(store);
+  } catch (e) {
+    if (store.kind !== 'supabase') throw e;
+    console.warn('Offcut: shared library unavailable, using this browser.', e);
+    store = makeLocalStore();
+    who = await identify(store);
+  }
+  return ingestClip(payload, store, new FlatBackgroundCutter(), who);
+}
+
+/**
  * The library: clipped objects, how often each has been used, and the
  * creation currently on the canvas. Everything persists through the store.
  */
@@ -280,6 +303,7 @@ export function useLibrary(pieces: Piece[], title: string) {
   return {
     objects,
     usage,
+    refresh,
     creations,
     refreshCreations,
     openCreation,

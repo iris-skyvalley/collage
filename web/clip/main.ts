@@ -14,8 +14,8 @@ import type { ClipPayload } from '../../lib/clip/ingest.ts';
 const STUDIO = new URL(
   (document.currentScript as HTMLScriptElement | null)?.src || import.meta.url,
 ).origin;
-const STUDIO_PATH = '/';
-const WINDOW_NAME = 'offcut-studio';
+const STUDIO_PATH = '/clip';
+const WINDOW_NAME = 'offcut-clip';
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 declare global {
@@ -140,7 +140,8 @@ function start() {
     say('Clipping…');
     try {
       const token = crypto.randomUUID();
-      // Open the studio first, inside the click, so pop-up blockers allow it.
+      // Open the receiver first, inside the click, so pop-up blockers allow
+      // it. It takes the clip, tells any open studio, and closes itself.
       studio = window.open(
         `${STUDIO}${STUDIO_PATH}?clip=${token}`,
         WINDOW_NAME,

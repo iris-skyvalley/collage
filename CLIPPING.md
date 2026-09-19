@@ -115,8 +115,9 @@ wrong one.
 
 The retailer's own wording is kept in `attributes.sourceCategory`.
 `categoryFor` derives a category for clips stored before this existed, so
-nothing is stranded. The card in the Clipped tab has a picker to correct it,
-which writes through `setCategory` on the store.
+nothing is stranded. The tile in the Clipped tab keeps a picker to
+correct it behind its dots button, which writes through `setCategory` on the
+store.
 
 The library grid draws from the catalog and from your clips together, so a
 clipped dress sits under Dresses beside the built-in pieces, marked with a
@@ -145,11 +146,26 @@ script, `clip.js`, built by `vite.clip.config.ts`. The same file is the
 content script for a browser extension, which is the answer for sites whose
 content-security policy blocks bookmarklets.
 
-Handshake: the clipper opens the studio at `/?clip=<token>` (inside the click,
-so pop-up blockers allow it), the studio posts `offcut:ready` to its opener,
-the clipper posts the payload back with the same token. The image travels as
-a data URL because the clipper, on the retailer's origin, can usually fetch
-the CDN image and the studio cannot.
+Handshake: the clipper opens the receiver at `/clip?clip=<token>` (inside the
+click, so pop-up blockers allow it), the receiver posts `offcut:ready` to its
+opener, the clipper posts the payload back with the same token. The image
+travels as a data URL because the clipper, on the retailer's origin, can
+usually fetch the CDN image and the studio cannot.
+
+The receiver (`app/clip/page.tsx`) is a page with nothing on it, because the
+studio is a canvas: opening one to catch a clip shows the last collage, saves
+over it from a second tab, and leaves the maker with a window they did not
+ask for. The receiver takes the clip in through `receiveClip`, which picks the
+store the way the studio does and writes no creation, announces it on the
+`offcut:clips` broadcast channel, and then asks that channel whether a studio
+is listening: if one answers it closes itself, and if none does it becomes the
+studio. A studio that hears the announcement reloads its library and turns to
+the Clipped tab, so the clip appears in the tab the maker is already in.
+
+A cross-site iframe would save the window, but not the library: third-party
+storage is partitioned, so an iframe of this origin on a retailer's page gets
+an empty bucket rather than the real one. A window of our own is the only way
+to the library.
 
 ## Running it
 
