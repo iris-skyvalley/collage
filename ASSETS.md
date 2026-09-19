@@ -41,7 +41,7 @@ Production build and TypeScript check. Browser interaction testing was not reque
   }
 ]
 ## Category tiles
-`public/categories/*.png` are original illustrations drawn as SVG for this project and rendered to PNG (no external source). Categories that already have a catalog photo reuse it from `public/pieces/`.
+`public/categories/dresses.png`, `pants.png`, `skirts.png`, `shorts.png`, and `accessories.png` are AI-generated photorealistic product cutouts created with the built-in image generation tool on 2026-09-19. They depict a denim dress, beige tailored trousers, charcoal pleated skirt, denim shorts, and brown leather handbag, respectively. The remaining category tiles are original project illustrations.
 
 ## Magazine pages
 `public/pieces/magazine.png` and `public/pieces/magazine1.png` are magazine page scans supplied by the project owner (converted from JPEG). Source and licensing not recorded.

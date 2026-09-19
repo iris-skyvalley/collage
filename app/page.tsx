@@ -55,6 +55,7 @@ import {
   BOARD_W,
   BOARD_H,
   type Piece,
+  type Product,
   categoryGroups,
 } from './collage';
 import {
@@ -64,6 +65,7 @@ import {
   bookmarkletFor,
 } from '@/hooks/use-library';
 import type { ClipObject } from '@/lib/objects/schema';
+import { categoryFor, categoryNames } from '@/lib/clip/categorize';
 export default function Home() {
   const [pieces, setPieces] = useState<Piece[]>(initial),
     [selected, setSelected] = useState<string | null>(null),
@@ -462,14 +464,31 @@ export default function Home() {
     } catch {}
     return () => life.abort();
   }, []);
-  const shown = products.filter(
-    (p) =>
+  // The library is the catalog and everything you have clipped, side by
+  // side, so a clipped dress is found under Dresses like any other piece.
+  const needle = query.toLowerCase();
+  const shown: LibraryEntry[] = [
+    ...library.objects.map((o) => ({
+      key: 'object:' + o.id,
+      object: o,
+      category: categoryFor(o),
+      words: [o.title, o.brand, o.source.retailer, o.category]
+        .filter(Boolean)
+        .join(' '),
+    })),
+    ...products.map((p) => ({
+      key: 'product:' + p.id,
+      product: p,
+      category: p.category,
+      words: p.name + ' ' + p.detail,
+    })),
+  ].filter(
+    (e) =>
       (tab === 'text'
-        ? p.category === 'Text'
+        ? e.category === 'Text'
         : category
-          ? p.category === category
-          : p.category !== 'Text') &&
-      (p.name + ' ' + p.detail).toLowerCase().includes(query.toLowerCase()),
+          ? e.category === category
+          : e.category !== 'Text') && e.words.toLowerCase().includes(needle),
   );
   return (
     <main>
@@ -988,6 +1007,23 @@ export default function Home() {
                   onQuery={setQuery}
                   onAdd={addObject}
                   announce={announce}
+                  onRecategorize={(o, name) =>
+                    library
+                      .recategorize(o, name)
+                      .then(() =>
+                        announce(
+                          name ? `Filed under ${name}.` : 'Category cleared.',
+                        ),
+                      )
+                      .catch((e: unknown) =>
+                        announce(
+                          e instanceof Error
+                            ? e.message
+                            : 'Could not change that.',
+                          4000,
+                        ),
+                      )
+                  }
                   onRemove={(o) => {
                     // Take it off the canvas only once it is really gone, so
                     // a refused removal does not empty the collage.
@@ -1050,38 +1086,76 @@ export default function Home() {
                           ? category.toUpperCase()
                           : 'THE SCRAPBOOK EDIT'}
                     </span>
-                    <span>{shown.length} pieces</span>
+                    <span>
+                      {shown.length} {shown.length === 1 ? 'piece' : 'pieces'}
+                    </span>
                   </div>
                   <div className="products">
-                    {shown.map((p, i) => (
-                      <button
-                        className="product"
-                        key={p.id}
-                        onClick={() => add(p.id)}
-                        draggable
-                        onDragStart={(e) =>
-                          e.dataTransfer.setData('product', p.id)
-                        }
-                      >
-                        <div className={'product-image tone-' + i}>
-                          {p.text ? (
-                            <span className={'type-sample ' + p.style}>
-                              {p.text}
-                            </span>
-                          ) : (
+                    {shown.map((e, i) =>
+                      e.object ? (
+                        <button
+                          className="product clipped"
+                          key={e.key}
+                          onClick={() => addObject(e.object!)}
+                          draggable
+                          onDragStart={(ev) =>
+                            ev.dataTransfer.setData('object', e.object!.id)
+                          }
+                        >
+                          <div className="product-image">
                             <img
-                              src={'/pieces/' + p.id + '.png'}
-                              alt={p.name}
+                              src={library.src(e.object)}
+                              alt={e.object.title}
                             />
-                          )}
-                          <span className="add">
-                            <Plus size={15} />
-                          </span>
-                        </div>
-                        <strong>{p.name}</strong>
-                        <small>{p.detail}</small>
-                      </button>
-                    ))}
+                            <span className="add">
+                              <Plus size={15} />
+                            </span>
+                            <span
+                              className="clipped-mark"
+                              title="You clipped this"
+                            >
+                              <Scissors size={11} />
+                            </span>
+                          </div>
+                          <strong>{e.object.title}</strong>
+                          <small>
+                            {[e.object.brand, e.object.source.retailer]
+                              .filter(Boolean)
+                              .join(' · ') || 'Clipped'}
+                          </small>
+                        </button>
+                      ) : (
+                        <button
+                          className="product"
+                          key={e.key}
+                          onClick={() => add(e.product!.id)}
+                          draggable
+                          onDragStart={(ev) =>
+                            ev.dataTransfer.setData('product', e.product!.id)
+                          }
+                        >
+                          <div className={'product-image tone-' + i}>
+                            {e.product!.text ? (
+                              <span
+                                className={'type-sample ' + e.product!.style}
+                              >
+                                {e.product!.text}
+                              </span>
+                            ) : (
+                              <img
+                                src={'/pieces/' + e.product!.id + '.png'}
+                                alt={e.product!.name}
+                              />
+                            )}
+                            <span className="add">
+                              <Plus size={15} />
+                            </span>
+                          </div>
+                          <strong>{e.product!.name}</strong>
+                          <small>{e.product!.detail}</small>
+                        </button>
+                      ),
+                    )}
                   </div>
                   {!shown.length && (
                     <p className="empty">
@@ -1185,6 +1259,12 @@ export default function Home() {
   );
 }
 
+/** One tile in the library grid: a catalog piece, or something you clipped. */
+type LibraryEntry = { key: string; category?: string; words: string } & (
+  | { product: Product; object?: undefined }
+  | { object: ClipObject; product?: undefined }
+);
+
 function pieceName(p: Piece, objects: ClipObject[]): string | undefined {
   return p.object
     ? objects.find((o) => o.id === p.object)?.title
@@ -1271,6 +1351,7 @@ function ClippedLibrary({
   onAdd,
   onRemove,
   announce,
+  onRecategorize,
 }: {
   objects: ClipObject[];
   usage: Record<string, number>;
@@ -1280,6 +1361,7 @@ function ClippedLibrary({
   onAdd: (o: ClipObject) => void;
   onRemove: (o: ClipObject) => void;
   announce: (s: string) => void;
+  onRecategorize: (o: ClipObject, category: string | undefined) => void;
 }) {
   const shown = objects.filter((o) =>
     [
@@ -1356,7 +1438,23 @@ function ClippedLibrary({
                   )}
                 </button>
                 <strong>{o.title}</strong>
-                <small>{meta || o.category || o.source.retailer}</small>
+                <small>{meta || o.source.retailer}</small>
+                <label className="clip-category">
+                  <span className="sr-only">Category for {o.title}</span>
+                  <select
+                    value={categoryFor(o) ?? ''}
+                    onChange={(e) =>
+                      onRecategorize(o, e.target.value || undefined)
+                    }
+                  >
+                    <option value="">Uncategorised</option>
+                    {categoryNames.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <small className="usage">
                   {n
                     ? `Used in ${n} ${n === 1 ? 'creation' : 'creations'}`

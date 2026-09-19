@@ -40,6 +40,8 @@ export interface ObjectStore {
   blobUrl?(key: string): string;
 
   putObject(object: ClipObject): Promise<void>;
+  /** Change which library category an object is filed under. */
+  setCategory(id: string, category: string | undefined): Promise<void>;
   getObject(id: string): Promise<ClipObject | undefined>;
   /** Newest first. */
   listObjects(filter?: { clippedBy?: string }): Promise<ClipObject[]>;
@@ -79,6 +81,15 @@ export class MemoryObjectStore implements ObjectStore {
 
   async putObject(object: ClipObject) {
     this.objects.set(object.id, structuredClone(object));
+  }
+  async setCategory(id: string, category: string | undefined) {
+    const o = this.objects.get(id);
+    if (o)
+      this.objects.set(id, {
+        ...o,
+        category,
+        updatedAt: new Date().toISOString(),
+      });
   }
   async getObject(id: string) {
     const o = this.objects.get(id);

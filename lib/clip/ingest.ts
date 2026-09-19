@@ -8,6 +8,7 @@ import type { ObjectStore } from '../objects/store.ts';
 import type { Cutter, Detection } from './cutout.ts';
 import type { Extracted } from './extract.ts';
 import { retailerFromHost, safeHost } from './extract.ts';
+import { categorize } from './categorize.ts';
 
 /**
  * What the clipper sends from the retailer's tab to the studio.
@@ -129,9 +130,19 @@ export async function ingestClip(
       x.title ?? payload.pick?.label ?? payload.pageTitle ?? 'Untitled clip',
     brand: x.brand,
     price: x.price,
-    category: x.category,
+    // The retailer's own wording is kept, but the category the studio files
+    // it under has to be one of the library's own.
+    category: categorize({
+      category: x.category,
+      title: x.title,
+      attributes: x.attributes,
+      url: x.canonicalUrl ?? payload.pageUrl,
+    }),
     description: x.description,
-    attributes: { ...x.attributes },
+    attributes: {
+      ...x.attributes,
+      ...(x.category ? { sourceCategory: x.category } : {}),
+    },
     originalImage: original,
     cutoutImage,
     cutout,

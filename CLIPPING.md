@@ -97,6 +97,31 @@ Vision/AI enrichment is the fallback layer this leaves room for: the
 `ExtractionMethod` union already carries `vision`, and `ClipObject.embedding`
 is reserved. Neither is wired to a model yet.
 
+## Categories
+
+Retailers describe things in their own words: a breadcrumb reading
+"Women / Outerwear / Puffers", a JSON-LD category of "Sneakers", a title of
+"Bias-cut slip dress". The library has one fixed set of tiles, so a clip is
+only findable once those words are mapped onto it.
+
+`lib/clip/categorize.ts` does that at clip time, trying the most trustworthy
+signal first: the retailer's category, then product attributes, then the
+title, and last the URL path. Rules are ordered and the first match wins,
+which is what makes a denim jacket outerwear rather than jeans. Phrases
+where one category's word sits inside another's are rewritten before
+matching, so "dress shirt" is a shirt, "dress shoes" are shoes and "top
+handle bag" is a bag. Nothing recognisable gives no category rather than a
+wrong one.
+
+The retailer's own wording is kept in `attributes.sourceCategory`.
+`categoryFor` derives a category for clips stored before this existed, so
+nothing is stranded. The card in the Clipped tab has a picker to correct it,
+which writes through `setCategory` on the store.
+
+The library grid draws from the catalog and from your clips together, so a
+clipped dress sits under Dresses beside the built-in pieces, marked with a
+scissors.
+
 ## Cutout
 
 `lib/clip/cutout.ts`. `cutoutFlatBackground` samples the border of the photo,
