@@ -83,10 +83,17 @@ export default function Home() {
     if (!el) return;
     const measure = () => {
       const cs = getComputedStyle(el);
+      // The tool column stands beside the board, so it is not room to fill.
+      const tools = el.querySelector('.board-tools');
+      const gutter = tools
+        ? tools.getBoundingClientRect().width +
+          parseFloat(getComputedStyle(tools).marginRight)
+        : 0;
       const w =
         el.clientWidth -
         parseFloat(cs.paddingLeft) -
-        parseFloat(cs.paddingRight);
+        parseFloat(cs.paddingRight) -
+        gutter;
       const h =
         el.clientHeight -
         parseFloat(cs.paddingTop) -
@@ -481,41 +488,6 @@ export default function Home() {
                   ? 'Saving in this browser'
                   : 'A little space for your taste'}
           </span>
-          <div className="header-icons" aria-label="History and layer order">
-            <button
-              aria-label="Undo"
-              title="Undo"
-              disabled={!history.length}
-              onClick={undo}
-            >
-              <Undo2 size={18} />
-            </button>
-            <button
-              aria-label="Redo"
-              title="Redo"
-              disabled={!future.length}
-              onClick={redo}
-            >
-              <Redo2 size={18} />
-            </button>
-            <span />
-            <button
-              aria-label="Send to back"
-              title="Send to back"
-              disabled={!current}
-              onClick={toBack}
-            >
-              <ArrowDown size={18} />
-            </button>
-            <button
-              aria-label="Bring to front"
-              title="Bring to front"
-              disabled={!current}
-              onClick={toFront}
-            >
-              <ArrowUp size={18} />
-            </button>
-          </div>
           <button
             className="header-button"
             title="Save this collage"
@@ -545,6 +517,51 @@ export default function Home() {
           <ResizablePanel id="canvas-panel" defaultSize="64%" minSize="35%">
             <section className="worktable">
               <div className="canvas-area" ref={area}>
+                <div className="board-tools" aria-label="History, layer order and delete">
+                  <button
+                    aria-label="Undo"
+                    title="Undo"
+                    disabled={!history.length}
+                    onClick={undo}
+                  >
+                    <Undo2 size={18} />
+                  </button>
+                  <button
+                    aria-label="Redo"
+                    title="Redo"
+                    disabled={!future.length}
+                    onClick={redo}
+                  >
+                    <Redo2 size={18} />
+                  </button>
+                  <span />
+                  <button
+                    aria-label="Send to back"
+                    title="Send to back"
+                    disabled={!current}
+                    onClick={toBack}
+                  >
+                    <ArrowDown size={18} />
+                  </button>
+                  <button
+                    aria-label="Bring to front"
+                    title="Bring to front"
+                    disabled={!current}
+                    onClick={toFront}
+                  >
+                    <ArrowUp size={18} />
+                  </button>
+                  <span />
+                  <button
+                    className="tool-delete"
+                    aria-label="Delete"
+                    title="Delete"
+                    disabled={!current}
+                    onClick={remove}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
                 <ContextMenu
                   open={menuOpen}
                   onOpenChange={(o) => setMenuOpen(o && !!current)}

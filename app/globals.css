@@ -231,14 +231,15 @@ body{font-size:16px}.filters button,.search input,.library-tabs button,.inspecto
 .filters .active{background:none;color:#584074;font-weight:600}
 .filters .active .filter-image{background:#ede6f5;border-color:#a180c6}
 .filters.hidden{display:none}
-/* Undo, redo and layer order live in the top bar as icons. */
-.header-icons{display:flex;align-items:center;gap:2px;height:40px;padding:3px;border:1px solid var(--border);border-radius:7px;background:#fff}
-.header-icons button{width:32px;height:32px;display:grid;place-items:center;border-radius:5px;color:#4f4757}
-.header-icons button:hover:not(:disabled){background:#f1eaf7}
-.header-icons>span{width:1px;height:20px;background:var(--border);margin:0 4px}
+/* Undo, redo and layer order stand beside the collage, stacked. */
+.board-tools{display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px;margin-right:18px;flex-shrink:0;border:1px solid var(--border);border-radius:7px;background:#fff}
+.board-tools button{width:32px;height:32px;display:grid;place-items:center;border-radius:5px;color:#4f4757}
+.board-tools button:hover:not(:disabled){background:#f1eaf7}
+.board-tools>span{height:1px;width:20px;background:var(--border);margin:4px 0}
+.board-tools .tool-delete{color:#9a6a70}
+.board-tools .tool-delete:hover:not(:disabled){background:#f8eaec;color:#a3333f}
 .text-dialog textarea{width:100%;margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:6px;font:italic 18px Georgia,serif;resize:vertical}
 .library{padding-top:10px}
-@media(max-width:760px){.header-icons{order:-1;height:36px}.header-icons button{width:28px;height:28px}}
 /* Desktop: the page is exactly one viewport tall; only the library scrolls. */
 html,body{height:100%}
 @media(min-width:761px){
