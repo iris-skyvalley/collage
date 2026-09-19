@@ -156,7 +156,7 @@ body{font-size:16px}.filters button,.search input,.library-tabs button,.inspecto
 
 
 
-.canvas-area{padding:1px;justify-content:safe center;align-items:safe center;min-height:0}
+.canvas-area{padding:1px 1px 10px;justify-content:safe center;align-items:safe center;min-height:0}
 .documentbar,
 @media(min-width:1500px){.workspace{grid-template-columns:minmax(0,1fr) 390px}}
 @media(max-width:1150px){.workspace{grid-template-columns:minmax(0,1fr) 310px}.canvas-area{padding:0 20px}}
