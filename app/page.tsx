@@ -22,6 +22,7 @@ import {
   X,
   Save,
   Mail,
+  LayoutGrid,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -64,14 +65,14 @@ import {
   formatPrice,
   bookmarkletFor,
 } from '@/hooks/use-library';
-import type { ClipObject } from '@/lib/objects/schema';
+import type { ClipObject, Creation } from '@/lib/objects/schema';
 import { categoryFor, categoryNames } from '@/lib/clip/categorize';
 export default function Home() {
   const [pieces, setPieces] = useState<Piece[]>(initial),
     [selected, setSelected] = useState<string | null>(null),
     [category, setCategory] = useState(''),
     [query, setQuery] = useState(''),
-    [title] = useState('The art of getting dressed'),
+    [title, setTitle] = useState('The art of getting dressed'),
     [notice, setNotice] = useState(''),
     [history, setHistory] = useState<Piece[][]>([]),
     [future, setFuture] = useState<Piece[][]>([]),
@@ -251,6 +252,23 @@ export default function Home() {
       })
       .catch(() => announce('That clip could not be saved.'));
   });
+  const { refreshCreations } = library;
+  useEffect(() => {
+    if (tab === 'sets') void refreshCreations().catch(() => {});
+  }, [tab, refreshCreations]);
+  /** Put a saved set on the canvas; what follows is saved back to it. */
+  function openSet(c: Creation) {
+    library
+      .openCreation(c.id)
+      .then((saved) => {
+        if (!saved) return announce('That set could not be opened.');
+        commit(saved.pieces as Piece[]);
+        setSelected(null);
+        setTitle(saved.title);
+        announce(`Opened \u201c${saved.title}\u201d.`);
+      })
+      .catch(() => announce('That set could not be opened.'));
+  }
   /** The image to draw for a piece: a catalog PNG or a clipped object. */
   function imageSrc(p: Piece): string | undefined {
     return p.object
@@ -973,9 +991,23 @@ export default function Home() {
                       </span>
                     )}
                   </TabsTrigger>
+                  <TabsTrigger value="sets">
+                    My sets
+                    {library.creations.length > 0 && (
+                      <span className="tab-count">
+                        {library.creations.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
-              {tab === 'clipped' ? (
+              {tab === 'sets' ? (
+                <SetsLibrary
+                  creations={library.creations}
+                  imageSrc={imageSrc}
+                  onOpen={openSet}
+                />
+              ) : tab === 'clipped' ? (
                 <ClippedLibrary
                   objects={library.objects}
                   usage={library.usage}
@@ -1144,7 +1176,16 @@ export default function Home() {
                 </>
               )}
               <div className="library-footer">
-                <Move size={15} /> Click or drag a piece onto your canvas.
+                {tab === 'sets' ? (
+                  <>
+                    <LayoutGrid size={15} /> Click a set to take it up where you
+                    left it.
+                  </>
+                ) : (
+                  <>
+                    <Move size={15} /> Click or drag a piece onto your canvas.
+                  </>
+                )}
               </div>
             </aside>
           </ResizablePanel>
@@ -1246,6 +1287,106 @@ function pieceName(p: Piece, objects: ClipObject[]): string | undefined {
   return p.object
     ? objects.find((o) => o.id === p.object)?.title
     : products.find((x) => x.id === p.product)?.name;
+}
+
+/** A saved set, drawn small: the board's own units, stated in container units. */
+function SetThumb({
+  pieces,
+  imageSrc,
+}: {
+  pieces: Piece[];
+  imageSrc: (p: Piece) => string | undefined;
+}) {
+  const u = (n: number) => `${(n * 100) / BOARD_W}cqw`;
+  return (
+    <span className="set-thumb">
+      {pieces.map((p) => {
+        const m = textMetrics(p);
+        return (
+          <span
+            className="set-piece"
+            key={p.id}
+            style={{
+              left: u(p.x),
+              top: u(p.y),
+              width: u(p.w),
+              height: u(p.h),
+              transform: `rotate(${p.r}deg)`,
+            }}
+          >
+            {p.text ? (
+              <span
+                className="collage-text"
+                style={{
+                  font: `${m.emphasis} ${u(m.size)} ${m.family}`,
+                  lineHeight: u(m.lineHeight),
+                  color: m.color,
+                  background: m.background,
+                }}
+              >
+                {p.text}
+              </span>
+            ) : (
+              <img src={imageSrc(p)} alt="" draggable={false} />
+            )}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+/** Every collage this creator has saved. Clicking one takes it up again. */
+function SetsLibrary({
+  creations,
+  imageSrc,
+  onOpen,
+}: {
+  creations: Creation[];
+  imageSrc: (p: Piece) => string | undefined;
+  onOpen: (c: Creation) => void;
+}) {
+  return (
+    <>
+      <div className="catalog-heading">
+        <span>YOUR SETS</span>
+        <span>
+          {creations.length} {creations.length === 1 ? 'set' : 'sets'}
+        </span>
+      </div>
+      {creations.length === 0 ? (
+        <div className="clipped-empty">
+          <LayoutGrid />
+          <h2>No sets yet.</h2>
+          <p>
+            Every collage is kept as you work. Press <strong>New</strong> above
+            to start another, and the one you leave behind arrives here.
+          </p>
+        </div>
+      ) : (
+        <div className="sets">
+          {creations.map((c) => (
+            <button
+              className="set-card"
+              key={c.id}
+              onClick={() => onOpen(c)}
+              title={`Open \u201c${c.title}\u201d`}
+            >
+              <SetThumb pieces={c.pieces as Piece[]} imageSrc={imageSrc} />
+              <strong>{c.title}</strong>
+              <small>
+                {c.pieces.length} {c.pieces.length === 1 ? 'piece' : 'pieces'} ·{' '}
+                {new Date(c.updatedAt).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </small>
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
 }
 
 /** The clipper explainer. It lives with the clips it makes, in that tab. */

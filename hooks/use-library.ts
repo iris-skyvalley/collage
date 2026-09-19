@@ -80,6 +80,17 @@ export function useLibrary(pieces: Piece[], title: string) {
   const urlsRef = useRef<Record<string, string>>({});
   const creationRef = useRef<{ id: string; createdAt: string } | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [creations, setCreations] = useState<Creation[]>([]);
+
+  /** The sets this creator has saved, newest first. */
+  const refreshCreations = useCallback(async () => {
+    const list = await store.listCreations({
+      ownerId: creatorRef.current ?? undefined,
+    });
+    setCreations(
+      [...list].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    );
+  }, [store]);
 
   const refresh = useCallback(async () => {
     const list = await store.listObjects({
@@ -207,6 +218,20 @@ export function useLibrary(pieces: Piece[], title: string) {
     };
   }, [hydrated, creator, saveNow]);
 
+  /** Take a saved set back onto the canvas; later saves belong to it. */
+  const openCreation = useCallback(
+    async (id: string): Promise<Creation | undefined> => {
+      const saved = await store.getCreation(id);
+      if (!saved) return undefined;
+      try {
+        localStorage.setItem(CREATION_KEY, id);
+      } catch {}
+      creationRef.current = { id, createdAt: saved.createdAt };
+      return saved;
+    },
+    [store],
+  );
+
   /** Leave the current creation in the library and start a fresh one. */
   const startNewCreation = useCallback(() => {
     const id = newId();
@@ -255,6 +280,9 @@ export function useLibrary(pieces: Piece[], title: string) {
   return {
     objects,
     usage,
+    creations,
+    refreshCreations,
+    openCreation,
     /** Image URL to show for an object (cutout when there is one). */
     src: (o: ClipObject) => urls[o.id],
     srcById: (id: string) => urls[id],

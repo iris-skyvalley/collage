@@ -270,13 +270,20 @@ export const initial: Piece[] = [
 ];
 export function textMetrics(p: Piece) {
   const style = p.style || 'serif';
+  // Size and line height are in board units, so a drawing at any scale can
+  // restate them in its own units; `font` is the same shorthand in pixels.
+  const size =
+    p.w * (style === 'stamp' ? 0.13 : style === 'caption' ? 0.052 : 0.16);
+  // 'italic' for the serif face, a weight for the others: the first word of
+  // the font shorthand either way.
+  const emphasis =
+    style === 'stamp' ? '900' : style === 'caption' ? '500' : 'italic';
+  const family = style === 'serif' ? 'Georgia' : 'Arial';
   return {
-    font:
-      style === 'stamp'
-        ? `900 ${p.w * 0.13}px Arial`
-        : style === 'caption'
-          ? `500 ${p.w * 0.052}px Arial`
-          : `italic ${p.w * 0.16}px Georgia`,
+    size,
+    emphasis,
+    family,
+    font: `${emphasis} ${size}px ${family}`,
     color: style === 'stamp' ? '#ab2029' : '#242124',
     lineHeight:
       p.w * (style === 'stamp' ? 0.135 : style === 'caption' ? 0.078 : 0.18),
